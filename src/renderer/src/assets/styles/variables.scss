@@ -1,0 +1,61 @@
+// Color System - Light Theme
+$color-primary: #409eff;
+$color-success: #67c23a;
+$color-warning: #e6a23c;
+$color-danger: #f56c6c;
+$color-info: #909399;
+
+// Background Colors
+$bg-color: #ffffff;
+$bg-color-page: #f2f3f5;
+$bg-color-overlay: rgba(0, 0, 0, 0.5);
+
+// Text Colors
+$text-color-primary: #303133;
+$text-color-regular: #606266;
+$text-color-secondary: #909399;
+$text-color-placeholder: #a8abb2;
+
+// Border Colors
+$border-color: #dcdfe6;
+$border-color-light: #e4e7ed;
+$border-color-lighter: #ebeef5;
+$border-color-extra-light: #f2f6fc;
+
+// Spacing (4px base unit)
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 12px;
+$spacing-base: 16px;
+$spacing-lg: 20px;
+$spacing-xl: 24px;
+$spacing-xxl: 32px;
+
+// Border Radius
+$border-radius-base: 4px;
+$border-radius-small: 2px;
+$border-radius-large: 8px;
+$border-radius-round: 20px;
+$border-radius-circle: 50%;
+
+// Shadows
+$box-shadow-base: 0 2px 4px rgba(0, 0, 0, 0.12), 0 0 6px rgba(0, 0, 0, 0.04);
+$box-shadow-dark: 0 2px 4px rgba(0, 0, 0, 0.48), 0 0 6px rgba(0, 0, 0, 0.24);
+$box-shadow-light: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+
+// Typography
+$font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+$font-size-extra-large: 20px;
+$font-size-large: 18px;
+$font-size-medium: 16px;
+$font-size-base: 14px;
+$font-size-small: 13px;
+$font-size-extra-small: 12px;
+
+// Transitions
+$transition-base: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+
+// Layout
+$header-height: 50px;
+$sidebar-width: 200px;
+$sidebar-collapsed-width: 64px;

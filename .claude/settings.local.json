@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "WebSearch",
+      "Bash(npm install:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm test:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npm run test:*)",
+      "Bash(ls:*)",
+      "Bash(npm run build:*)"
+    ]
+  }
+}
