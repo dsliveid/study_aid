@@ -7,8 +7,8 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "dev": "electron-vite dev",
-    "build": "electron-vite build",
+    "dev": "chcp 65001 > nul && electron-vite dev",
+    "build": "electron-vite build && node scripts/copy-screenshot-html.js",
     "preview": "electron-vite preview",
     "build:win": "npm run build && electron-builder --win --config electron-builder.config.js",
     "build:win:x64": "npm run build && electron-builder --win --x64 --config electron-builder.config.js",
@@ -21,7 +21,8 @@
     "format": "prettier --write src/",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "copy:screenshot": "node scripts/copy-screenshot-html.js"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.0",

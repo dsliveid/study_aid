@@ -1,5 +1,7 @@
-import { ipcMain } from 'electron'
+import { ipcMain, shell } from 'electron'
 import { getSettingsService } from '../../services/settings.service'
+import { app } from 'electron'
+import { join } from 'path'
 
 /**
  * Settings Handler
@@ -105,6 +107,22 @@ async function openDataFolderHandler(): Promise<any> {
 }
 
 /**
+ * Open logs folder
+ */
+async function openLogsFolderHandler(): Promise<any> {
+  try {
+    const logsDir = join(app.getPath('userData'), 'logs')
+    shell.openPath(logsDir)
+    return { success: true }
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || 'Failed to open logs folder'
+    }
+  }
+}
+
+/**
  * Calculate storage size
  */
 async function calculateStorageSizeHandler(): Promise<any> {
@@ -189,6 +207,7 @@ export function registerSettingsHandlers(): void {
   ipcMain.handle('settings:selectDataPath', selectDataPathHandler)
   ipcMain.handle('settings:selectScreenshotPath', selectScreenshotPathHandler)
   ipcMain.handle('settings:openDataFolder', openDataFolderHandler)
+  ipcMain.handle('settings:openLogsFolder', openLogsFolderHandler)
   ipcMain.handle('settings:calculateStorageSize', calculateStorageSizeHandler)
   ipcMain.handle('settings:getPaths', getPathsHandler)
   ipcMain.handle('settings:reset', resetSettingsHandler)

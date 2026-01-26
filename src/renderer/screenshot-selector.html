@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>截图区域选择</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      cursor: crosshair;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    #container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.3);
+    }
+
+    #selection {
+      position: absolute;
+      border: 2px dashed #ff6b6b;
+      background-color: rgba(255, 107, 107, 0.1);
+      display: none;
+      pointer-events: none;
+    }
+
+    #selection.active {
+      display: block;
+    }
+
+    .info {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 1000;
+      user-select: none;
+    }
+
+    .size-info {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: monospace;
+      z-index: 1000;
+      display: none;
+      user-select: none;
+    }
+
+    .size-info.visible {
+      display: block;
+    }
+
+    .toolbar {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(255, 255, 255, 0.95);
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      display: none;
+      gap: 8px;
+      z-index: 1001;
+    }
+
+    .toolbar.visible {
+      display: flex;
+    }
+
+    .toolbar button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .toolbar button.primary {
+      background-color: #409eff;
+      color: white;
+    }
+
+    .toolbar button.primary:hover {
+      background-color: #66b1ff;
+    }
+
+    .toolbar button.secondary {
+      background-color: #f56c6c;
+      color: white;
+    }
+
+    .toolbar button.secondary:hover {
+      background-color: #f78989;
+    }
+
+    .corner {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background-color: #ff6b6b;
+      border-radius: 2px;
+    }
+
+    .corner.tl { top: -4px; left: -4px; }
+    .corner.tr { top: -4px; right: -4px; }
+    .corner.bl { bottom: -4px; left: -4px; }
+    .corner.br { bottom: -4px; right: -4px; }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <div class="info">拖动鼠标选择截图区域，按 ESC 键取消</div>
+    <div id="selection">
+      <div class="corner tl"></div>
+      <div class="corner tr"></div>
+      <div class="corner bl"></div>
+      <div class="corner br"></div>
+    </div>
+    <div class="size-info" id="sizeInfo">0 x 0</div>
+    <div class="toolbar" id="toolbar">
+      <button class="secondary" id="cancelBtn">取消</button>
+      <button class="primary" id="confirmBtn">确认截图</button>
+    </div>
+  </div>
+
+  <script>
+    console.log('[ScreenshotSelector] 脚本开始执行')
+
+    const { ipcRenderer } = require('electron')
+    console.log('[ScreenshotSelector] Electron 模块加载成功', {
+      hasIpcRenderer: !!ipcRenderer
+    })
+
+    const container = document.getElementById('container')
+    const selection = document.getElementById('selection')
+    const sizeInfo = document.getElementById('sizeInfo')
+    const toolbar = document.getElementById('toolbar')
+    const confirmBtn = document.getElementById('confirmBtn')
+    const cancelBtn = document.getElementById('cancelBtn')
+
+    console.log('[ScreenshotSelector] DOM 元素获取结果:', {
+      hasContainer: !!container,
+      hasSelection: !!selection,
+      hasSizeInfo: !!sizeInfo,
+      hasToolbar: !!toolbar,
+      hasConfirmBtn: !!confirmBtn,
+      hasCancelBtn: !!cancelBtn
+    })
+
+    let isSelecting = false
+    let startX = 0
+    let startY = 0
+    let currentX = 0
+    let currentY = 0
+
+    // Mouse down - start selection
+    container.addEventListener('mousedown', (e) => {
+      console.log('[ScreenshotSelector] mousedown 事件:', {
+        button: e.button,
+        x: e.clientX,
+        y: e.clientY,
+        target: e.target.tagName,
+        targetId: e.target.id,
+        targetClass: e.target.className,
+        toolbarVisible: toolbar.classList.contains('visible')
+      })
+
+      if (e.button !== 0) return // Only left click
+
+      // Don't start selection if toolbar is visible or clicking on buttons
+      if (toolbar.classList.contains('visible')) {
+        console.log('[ScreenshotSelector] 工具栏可见，忽略 mousedown 事件')
+        return
+      }
+
+      // Don't start selection if clicking on buttons
+      if (e.target.id === 'confirmBtn' || e.target.id === 'cancelBtn') {
+        console.log('[ScreenshotSelector] 点击了按钮，忽略 mousedown 事件')
+        return
+      }
+
+      isSelecting = true
+      startX = e.clientX
+      startY = e.clientY
+      currentX = startX
+      currentY = startY
+
+      updateSelection()
+      selection.classList.add('active')
+      toolbar.classList.remove('visible')
+
+      console.log('[ScreenshotSelector] 开始选择区域')
+    })
+
+    // Mouse move - update selection
+    container.addEventListener('mousemove', (e) => {
+      if (!isSelecting) return
+
+      currentX = e.clientX
+      currentY = e.clientY
+
+      updateSelection()
+      updateSizeInfo()
+      sizeInfo.classList.add('visible')
+    })
+
+    // Mouse up - finish selection
+    container.addEventListener('mouseup', () => {
+      if (!isSelecting) return
+
+      isSelecting = false
+
+      const width = Math.abs(currentX - startX)
+      const height = Math.abs(currentY - startY)
+
+      console.log('[ScreenshotSelector] 鼠标松开，选择区域大小:', { width, height })
+
+      // If selection is too small, ignore it
+      if (width < 10 || height < 10) {
+        console.log('[ScreenshotSelector] 选择区域太小，忽略')
+        selection.classList.remove('active')
+        sizeInfo.classList.remove('visible')
+        return
+      }
+
+      // Show toolbar
+      console.log('[ScreenshotSelector] 显示工具栏')
+      toolbar.classList.add('visible')
+    })
+
+    // Register button event listeners
+    console.log('[ScreenshotSelector] 开始注册按钮事件监听器')
+
+    // Update selection rectangle
+    function updateSelection() {
+      const x = Math.min(startX, currentX)
+      const y = Math.min(startY, currentY)
+      const width = Math.abs(currentX - startX)
+      const height = Math.abs(currentY - startY)
+
+      selection.style.left = x + 'px'
+      selection.style.top = y + 'px'
+      selection.style.width = width + 'px'
+      selection.style.height = height + 'px'
+    }
+
+    // Update size info
+    function updateSizeInfo() {
+      const width = Math.abs(currentX - startX)
+      const height = Math.abs(currentY - startY)
+      sizeInfo.textContent = `${width} x ${height}`
+    }
+
+    // Confirm screenshot
+    confirmBtn.addEventListener('click', async () => {
+      console.log('[ScreenshotSelector] 确认按钮被点击')
+      try {
+        console.log('[ScreenshotSelector] 开始截图...', {
+          startX, startY, currentX, currentY
+        })
+
+        const x = Math.min(startX, currentX)
+        const y = Math.min(startY, currentY)
+        const width = Math.abs(currentX - startX)
+        const height = Math.abs(currentY - startY)
+
+        console.log('[ScreenshotSelector] 选择区域:', { x, y, width, height })
+
+        // Get screen capture from main process via IPC
+        console.log('[ScreenshotSelector] 开始调用 IPC 获取截图...')
+        const result = await ipcRenderer.invoke('screenshot:getDesktopCapture')
+
+        if (!result.success || !result.data) {
+          console.error('[ScreenshotSelector] 获取截图失败:', result.error)
+          ipcRenderer.send('screenshot-cancelled')
+          return
+        }
+
+        const { dataUrl: fullScreenshot, width: capturedWidth, height: capturedHeight } = result.data
+        console.log('[ScreenshotSelector] 全屏截图获取成功', {
+          dataUrlLength: fullScreenshot.length,
+          capturedWidth,
+          capturedHeight
+        })
+
+        // Crop the selected region
+        console.log('[ScreenshotSelector] 开始裁剪图片...')
+        const croppedDataUrl = await cropRegion(
+          fullScreenshot,
+          x,
+          y,
+          width,
+          height,
+          capturedWidth,
+          capturedHeight
+        )
+        console.log('[ScreenshotSelector] 裁剪完成，dataUrl 长度:', croppedDataUrl.length)
+
+        // Send result back to main process
+        console.log('[ScreenshotSelector] 发送 IPC 消息: screenshot-selected')
+        ipcRenderer.send('screenshot-selected', {
+          dataUrl: croppedDataUrl,
+          region: { x, y, width, height }
+        })
+
+        console.log('[ScreenshotSelector] 已发送截图数据到主进程')
+      } catch (error) {
+        console.error('[ScreenshotSelector] 截图失败:', error)
+        console.error('[ScreenshotSelector] 错误堆栈:', error.stack)
+        ipcRenderer.send('screenshot-cancelled')
+      }
+    })
+    console.log('[ScreenshotSelector] 确认按钮事件监听器已注册')
+
+    // Cancel screenshot
+    cancelBtn.addEventListener('click', () => {
+      console.log('[ScreenshotSelector] 取消按钮被点击')
+      ipcRenderer.send('screenshot-cancelled')
+    })
+    console.log('[ScreenshotSelector] 取消按钮事件监听器已注册')
+
+    // ESC key to cancel
+    let escEnabled = false
+    // Enable ESC key after 500ms to prevent immediate trigger on window open
+    setTimeout(() => {
+      escEnabled = true
+      console.log('[ScreenshotSelector] ESC 键已启用')
+    }, 500)
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && escEnabled) {
+        console.log('[ScreenshotSelector] 用户按 ESC 取消')
+        ipcRenderer.send('screenshot-cancelled')
+      } else if (e.key === 'Escape' && !escEnabled) {
+        console.log('[ScreenshotSelector] ESC 键按下但尚未启用，忽略')
+      }
+    })
+    console.log('[ScreenshotSelector] ESC 键事件监听器已注册')
+
+    // Crop function using canvas
+    function cropRegion(dataUrl, x, y, width, height, capturedWidth, capturedHeight) {
+      return new Promise((resolve, reject) => {
+        const img = new Image()
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          const ctx = canvas.getContext('2d')
+
+          if (!ctx) {
+            reject(new Error('Failed to get canvas context'))
+            return
+          }
+
+          console.log('[ScreenshotSelector] 图片加载完成', {
+            naturalWidth: img.naturalWidth,
+            naturalHeight: img.naturalHeight,
+            capturedWidth,
+            capturedHeight,
+            windowWidth: window.innerWidth,
+            windowHeight: window.innerHeight
+          })
+
+          // Set canvas size to the selection size
+          canvas.width = width
+          canvas.height = height
+
+          // Get window dimensions
+          const windowWidth = window.innerWidth
+          const windowHeight = window.innerHeight
+
+          // Calculate scale factors
+          const scaleX = capturedWidth / windowWidth
+          const scaleY = capturedHeight / windowHeight
+
+          console.log('[ScreenshotSelector] 缩放因子:', { scaleX, scaleY })
+
+          // Draw the cropped region
+          ctx.drawImage(
+            img,
+            x * scaleX, y * scaleY,  // Source x, y
+            width * scaleX, height * scaleY,  // Source width, height
+            0, 0,  // Destination x, y
+            width, height  // Destination width, height
+          )
+
+          const result = canvas.toDataURL('image/png')
+          console.log('[ScreenshotSelector] Canvas 转换完成')
+          resolve(result)
+        }
+        img.onerror = (error) => {
+          console.error('[ScreenshotSelector] 图片加载失败:', error)
+          reject(new Error('Failed to load image'))
+        }
+        img.src = dataUrl
+      })
+    }
+
+    // Prevent context menu
+    document.addEventListener('contextmenu', (e) => {
+      e.preventDefault()
+    })
+
+    console.log('Screenshot selector initialized')
+  </script>
+</body>
+</html>

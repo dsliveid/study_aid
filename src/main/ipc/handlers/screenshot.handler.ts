@@ -1,4 +1,4 @@
-import { ipcMain, type IpcMainInvokeEvent, BrowserWindow } from 'electron'
+import { ipcMain, type IpcMainInvokeEvent, BrowserWindow, desktopCapturer } from 'electron'
 import { getScreenshotService } from '../../services/screenshot.service'
 
 /**
@@ -56,6 +56,37 @@ async function getScreenSourcesHandler(
   return wrapResponse(async () => {
     const service = getScreenshotService()
     return await service.getScreenSources()
+  })
+}
+
+/**
+ * Get desktop capture for region selector (high resolution)
+ * This is called from the screenshot selector window
+ */
+async function getDesktopCaptureHandler(
+  _event: IpcMainInvokeEvent
+): Promise<IpcResponse<{ dataUrl: string; width: number; height: number }>> {
+  return wrapResponse(async () => {
+    console.log('[IPC:Screenshot] getDesktopCapture 调用 - 获取高分辨率截图')
+    const sources = await desktopCapturer.getSources({
+      types: ['screen'],
+      thumbnailSize: { width: 3840, height: 2160 }
+    })
+
+    if (sources.length === 0) {
+      throw new Error('未找到屏幕源')
+    }
+
+    const primaryScreen = sources[0]
+    const dataUrl = primaryScreen.thumbnail.toDataURL()
+
+    console.log('[IPC:Screenshot] getDesktopCapture 完成 - dataUrl 长度:', dataUrl.length)
+
+    return {
+      dataUrl,
+      width: primaryScreen.thumbnail.getSize().width,
+      height: primaryScreen.thumbnail.getSize().height
+    }
   })
 }
 
@@ -174,6 +205,7 @@ export function registerScreenshotHandlers() {
   ipcMain.handle('screenshot:captureScreenById', captureScreenByIdHandler)
   ipcMain.handle('screenshot:getScreenSources', getScreenSourcesHandler)
   ipcMain.handle('screenshot:openRegionSelector', openRegionSelectorHandler)
+  ipcMain.handle('screenshot:getDesktopCapture', getDesktopCaptureHandler)
 
   // Screenshot management
   ipcMain.handle('screenshot:save', saveScreenshotHandler)

@@ -1,6 +1,18 @@
 import { app, BrowserWindow } from 'electron'
 import path from 'path'
 
+// Initialize logger first to capture all logs
+import { initLogger } from './utils/logger'
+const logger = initLogger()
+
+// Set console encoding to UTF-8 for better Chinese character support
+if (process.stdout.isTTY) {
+  process.stdout.setEncoding('utf-8')
+}
+if (process.stderr.isTTY) {
+  process.stderr.setEncoding('utf-8')
+}
+
 let mainWindow: BrowserWindow | null = null
 
 function createWindow() {
@@ -54,6 +66,12 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
+})
+
+// Clean up logger before app quits
+app.on('before-quit', () => {
+  const { getLogger } = require('./utils/logger')
+  getLogger().destroy()
 })
 
 // Import IPC handlers at the top level to register them

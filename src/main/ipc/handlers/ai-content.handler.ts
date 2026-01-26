@@ -48,8 +48,25 @@ async function initializeAIContentServiceHandler(
   _event: IpcMainInvokeEvent,
   config: AIContentConfig
 ): Promise<IpcResponse<void>> {
+  console.log('[IPC:AIContent] initialize 调用 - 入参:', {
+    timestamp: new Date().toISOString(),
+    hasApiKey: !!config.apiKey,
+    apiKeyPrefix: config.apiKey ? `${config.apiKey.substring(0, 8)}...` : 'N/A',
+    baseUrl: config.baseUrl || 'default',
+    model: config.model || 'default'
+  })
+
+  const startTime = Date.now()
+
   return wrapResponse(async () => {
     initializeAIContentService(config)
+
+    const duration = Date.now() - startTime
+    console.log('[IPC:AIContent] initialize 完成 - 出参:', {
+      success: true,
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString()
+    })
   })
 }
 
@@ -60,9 +77,28 @@ async function generateKnowledgeTreeHandler(
   _event: IpcMainInvokeEvent,
   content: string
 ): Promise<IpcResponse<KnowledgeTreeResult>> {
+  console.log('[IPC:AIContent] generateKnowledgeTree 调用 - 入参:', {
+    timestamp: new Date().toISOString(),
+    contentLength: content.length,
+    contentPreview: content.substring(0, 100) + '...'
+  })
+
+  const startTime = Date.now()
+
   return wrapResponse(async () => {
     const service = getAIContentService()
-    return await service.generateKnowledgeTree(content)
+    const result = await service.generateKnowledgeTree(content)
+
+    const duration = Date.now() - startTime
+    console.log('[IPC:AIContent] generateKnowledgeTree 完成 - 出参:', {
+      success: true,
+      titleLength: result.title?.length || 0,
+      nodeCount: result.structure?.length || 0,
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString()
+    })
+
+    return result
   })
 }
 
@@ -73,9 +109,27 @@ async function extractKeyPointsHandler(
   _event: IpcMainInvokeEvent,
   content: string
 ): Promise<IpcResponse<KeyPointsResult>> {
+  console.log('[IPC:AIContent] extractKeyPoints 调用 - 入参:', {
+    timestamp: new Date().toISOString(),
+    contentLength: content.length,
+    contentPreview: content.substring(0, 100) + '...'
+  })
+
+  const startTime = Date.now()
+
   return wrapResponse(async () => {
     const service = getAIContentService()
-    return await service.extractKeyPoints(content)
+    const result = await service.extractKeyPoints(content)
+
+    const duration = Date.now() - startTime
+    console.log('[IPC:AIContent] extractKeyPoints 完成 - 出参:', {
+      success: true,
+      keyPointsCount: result.keyPoints?.length || 0,
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString()
+    })
+
+    return result
   })
 }
 
@@ -86,9 +140,27 @@ async function annotateDifficultPointsHandler(
   _event: IpcMainInvokeEvent,
   content: string
 ): Promise<IpcResponse<DifficultPointsResult>> {
+  console.log('[IPC:AIContent] annotateDifficultPoints 调用 - 入参:', {
+    timestamp: new Date().toISOString(),
+    contentLength: content.length,
+    contentPreview: content.substring(0, 100) + '...'
+  })
+
+  const startTime = Date.now()
+
   return wrapResponse(async () => {
     const service = getAIContentService()
-    return await service.annotateDifficultPoints(content)
+    const result = await service.annotateDifficultPoints(content)
+
+    const duration = Date.now() - startTime
+    console.log('[IPC:AIContent] annotateDifficultPoints 完成 - 出参:', {
+      success: true,
+      difficultPointsCount: result.difficultPoints?.length || 0,
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString()
+    })
+
+    return result
   })
 }
 
@@ -99,9 +171,25 @@ async function updateAIContentConfigHandler(
   _event: IpcMainInvokeEvent,
   config: Partial<AIContentConfig>
 ): Promise<IpcResponse<void>> {
+  console.log('[IPC:AIContent] updateConfig 调用 - 入参:', {
+    timestamp: new Date().toISOString(),
+    hasApiKey: !!config.apiKey,
+    hasBaseUrl: !!config.baseUrl,
+    hasModel: !!config.model
+  })
+
+  const startTime = Date.now()
+
   return wrapResponse(async () => {
     const service = getAIContentService()
     service.updateConfig(config)
+
+    const duration = Date.now() - startTime
+    console.log('[IPC:AIContent] updateConfig 完成 - 出参:', {
+      success: true,
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString()
+    })
   })
 }
 
@@ -111,9 +199,26 @@ async function updateAIContentConfigHandler(
 async function getAIContentConfigHandler(
   _event: IpcMainInvokeEvent
 ): Promise<IpcResponse<any>> {
+  console.log('[IPC:AIContent] getConfig 调用 - 入参: {}', {
+    timestamp: new Date().toISOString()
+  })
+
+  const startTime = Date.now()
+
   return wrapResponse(async () => {
     const service = getAIContentService()
-    return service.getConfig()
+    const config = service.getConfig()
+
+    const duration = Date.now() - startTime
+    console.log('[IPC:AIContent] getConfig 完成 - 出参:', {
+      hasApiKey: !!config.apiKey,
+      baseUrl: config.baseUrl,
+      model: config.model,
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString()
+    })
+
+    return config
   })
 }
 
@@ -124,21 +229,46 @@ async function testAIContentServiceHandler(
   _event: IpcMainInvokeEvent,
   config: AIContentConfig
 ): Promise<IpcResponse<{ success: boolean; message: string }>> {
+  console.log('[IPC:AIContent] test 调用 - 入参:', {
+    timestamp: new Date().toISOString(),
+    hasApiKey: !!config.apiKey,
+    apiKeyPrefix: config.apiKey ? `${config.apiKey.substring(0, 8)}...` : 'N/A',
+    baseUrl: config.baseUrl || 'default',
+    model: config.model || 'default'
+  })
+
+  const startTime = Date.now()
+
   return wrapResponse(async () => {
     // Create a temporary service instance for testing
     const tempService = initializeAIContentService(config)
 
     // Test with a simple prompt
     const testContent = '这是一个测试文档。'
+    console.log('[IPC:AIContent] test - 开始测试，生成知识树...')
+
     const result = await tempService.generateKnowledgeTree(testContent)
 
     // Reset to avoid affecting the main instance
     resetAIContentService()
 
-    return {
+    const duration = Date.now() - startTime
+    const response = {
       success: true,
       message: 'AI服务连接成功'
     }
+
+    console.log('[IPC:AIContent] test 完成 - 出参:', {
+      ...response,
+      testResult: {
+        titleGenerated: !!result.title,
+        structureGenerated: result.structure?.length > 0
+      },
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString()
+    })
+
+    return response
   })
 }
 

@@ -156,10 +156,20 @@ class ImageRecognitionService {
    * Initialize the image recognition service with configuration
    */
   async initialize(config: ImageRecognitionConfig): Promise<void> {
+    console.log('[ImageRecognitionService] 开始初始化服务...')
+
+    // Validate configuration
+    this.validateConfig(config)
+
     this.config = config
 
     // Initialize Baidu OCR if configured
     if (config.ocr?.baidu) {
+      console.log('[ImageRecognitionService] 初始化百度 OCR...', {
+        hasApiKey: !!config.ocr.baidu.apiKey,
+        hasSecretKey: !!config.ocr.baidu.secretKey
+      })
+
       this.ocrAxios = axios.create({
         timeout: 30000,
         headers: {
@@ -168,10 +178,17 @@ class ImageRecognitionService {
       })
       // Get access token for Baidu OCR
       await this.getBaiduAccessToken()
+
+      console.log('[ImageRecognitionService] 百度 OCR 初始化成功 ✓')
     }
 
     // Initialize Qwen VL if configured
     if (config.vision?.qwen) {
+      console.log('[ImageRecognitionService] 初始化通义千问 VL...', {
+        hasApiKey: !!config.vision.qwen.apiKey,
+        model: config.vision.qwen.model
+      })
+
       this.visionAxios = axios.create({
         baseURL: 'https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation',
         timeout: 60000,
@@ -180,7 +197,71 @@ class ImageRecognitionService {
           'Authorization': `Bearer ${config.vision.qwen.apiKey}`
         }
       })
+
+      console.log('[ImageRecognitionService] 通义千问 VL 初始化成功 ✓')
     }
+
+    console.log('[ImageRecognitionService] 服务初始化完成')
+  }
+
+  /**
+   * Validate configuration with detailed error messages
+   */
+  private validateConfig(config: ImageRecognitionConfig): void {
+    const missingFields: string[] = []
+    const warnings: string[] = []
+
+    // Check OCR configuration
+    if (config.ocr) {
+      if (config.ocr.provider === 'baidu') {
+        if (!config.ocr.baidu?.apiKey) {
+          missingFields.push('OCR - 百度 API 密钥')
+        }
+        if (!config.ocr.baidu?.secretKey) {
+          missingFields.push('OCR - 百度 Secret Key')
+        }
+      }
+    } else {
+      warnings.push('OCR 服务未配置')
+    }
+
+    // Check Vision configuration
+    if (config.vision) {
+      if (config.vision.provider === 'qwen') {
+        if (!config.vision.qwen?.apiKey) {
+          missingFields.push('图像理解 - 通义千问 API 密钥')
+        }
+      }
+    } else {
+      warnings.push('图像理解服务未配置')
+    }
+
+    // Log configuration details
+    console.log('[ImageRecognitionService] 配置验证:', {
+      hasOCR: !!config.ocr,
+      ocrProvider: config.ocr?.provider,
+      hasVision: !!config.vision,
+      visionProvider: config.vision?.provider,
+      warnings
+    })
+
+    if (missingFields.length > 0) {
+      const errorMessage = `图像识别服务配置不完整\n\n缺失配置项:\n${missingFields.map(f => `  • ${f}`).join('\n')}\n\n请按以下步骤配置:\n1. 打开"设置"页面\n2. 进入"AI 服务"选项卡\n3. 在"图像识别服务"部分填写完整信息\n4. 百度OCR需要: API 密钥、Secret Key\n5. 通义千问VL需要: API 密钥\n6. 保存设置后重新连接`
+
+      console.error('[ImageRecognitionService] 配置验证失败:', {
+        missingFields,
+        warnings,
+        config
+      })
+
+      throw new Error(errorMessage)
+    }
+
+    if (warnings.length > 0) {
+      console.warn('[ImageRecognitionService] 配置警告:', warnings)
+    }
+
+    console.log('[ImageRecognitionService] 配置验证通过')
   }
 
   /**

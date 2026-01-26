@@ -45,8 +45,26 @@ async function initializeImageRecognitionHandler(
   _event: IpcMainInvokeEvent,
   config: ImageRecognitionConfig
 ): Promise<IpcResponse<void>> {
+  console.log('[IPC:ImageRecognition] initialize 调用 - 入参:', {
+    timestamp: new Date().toISOString(),
+    hasOCR: !!config.ocr,
+    ocrProvider: config.ocr?.provider || 'N/A',
+    hasBaiduApiKey: !!config.ocr?.baidu?.apiKey,
+    hasVision: !!config.vision,
+    visionProvider: config.vision?.provider || 'N/A'
+  })
+
+  const startTime = Date.now()
+
   return wrapResponse(async () => {
     await imageRecognitionService.initialize(config)
+
+    const duration = Date.now() - startTime
+    console.log('[IPC:ImageRecognition] initialize 完成 - 出参:', {
+      success: true,
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString()
+    })
   })
 }
 
@@ -57,8 +75,23 @@ async function updateImageRecognitionConfigHandler(
   _event: IpcMainInvokeEvent,
   config: Partial<ImageRecognitionConfig>
 ): Promise<IpcResponse<void>> {
+  console.log('[IPC:ImageRecognition] updateConfig 调用 - 入参:', {
+    timestamp: new Date().toISOString(),
+    hasOCR: !!config.ocr,
+    hasVision: !!config.vision
+  })
+
+  const startTime = Date.now()
+
   return wrapResponse(async () => {
     await imageRecognitionService.updateConfig(config)
+
+    const duration = Date.now() - startTime
+    console.log('[IPC:ImageRecognition] updateConfig 完成 - 出参:', {
+      success: true,
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString()
+    })
   })
 }
 
@@ -69,8 +102,28 @@ async function recognizeTextHandler(
   _event: IpcMainInvokeEvent,
   imageData: Buffer
 ): Promise<IpcResponse<OCRResult>> {
+  console.log('[IPC:ImageRecognition] recognizeText 调用 - 入参:', {
+    timestamp: new Date().toISOString(),
+    imageSize: imageData.length,
+    imageFormat: 'Buffer'
+  })
+
+  const startTime = Date.now()
+
   return wrapResponse(async () => {
-    return await imageRecognitionService.recognizeText(imageData)
+    const result = await imageRecognitionService.recognizeText(imageData)
+
+    const duration = Date.now() - startTime
+    console.log('[IPC:ImageRecognition] recognizeText 完成 - 出参:', {
+      success: true,
+      textLength: result.text?.length || 0,
+      hasError: !result.success,
+      errorMessage: result.error,
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString()
+    })
+
+    return result
   })
 }
 
@@ -82,8 +135,29 @@ async function understandImageHandler(
   imageData: Buffer,
   prompt?: string
 ): Promise<IpcResponse<ImageUnderstandingResult>> {
+  console.log('[IPC:ImageRecognition] understandImage 调用 - 入参:', {
+    timestamp: new Date().toISOString(),
+    imageSize: imageData.length,
+    promptLength: prompt?.length || 0
+  })
+
+  const startTime = Date.now()
+
   return wrapResponse(async () => {
-    return await imageRecognitionService.understandImage(imageData, prompt)
+    const result = await imageRecognitionService.understandImage(imageData, prompt)
+
+    const duration = Date.now() - startTime
+    console.log('[IPC:ImageRecognition] understandImage 完成 - 出参:', {
+      success: result.success,
+      hasContent: !!result.data?.content,
+      contentLength: result.data?.content?.length || 0,
+      hasError: !result.success,
+      errorMessage: result.error,
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString()
+    })
+
+    return result
   })
 }
 
@@ -99,8 +173,31 @@ async function recognizeImageHandler(
     understandingPrompt?: string
   }
 ): Promise<IpcResponse<RecognitionResult>> {
+  console.log('[IPC:ImageRecognition] recognize 调用 - 入参:', {
+    timestamp: new Date().toISOString(),
+    imageSize: imageData.length,
+    enableOCR: options?.enableOCR,
+    enableUnderstanding: options?.enableUnderstanding,
+    hasPrompt: !!options?.understandingPrompt
+  })
+
+  const startTime = Date.now()
+
   return wrapResponse(async () => {
-    return await imageRecognitionService.recognize(imageData, options)
+    const result = await imageRecognitionService.recognize(imageData, options)
+
+    const duration = Date.now() - startTime
+    console.log('[IPC:ImageRecognition] recognize 完成 - 出参:', {
+      success: result.success,
+      hasOCR: !!result.ocr,
+      hasUnderstanding: !!result.understanding,
+      hasError: !result.success,
+      errorMessage: result.error,
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString()
+    })
+
+    return result
   })
 }
 
@@ -114,8 +211,30 @@ async function testImageRecognitionHandler(
   ocr?: { success: boolean; error?: string }
   vision?: { success: boolean; error?: string }
 }>> {
+  console.log('[IPC:ImageRecognition] test 调用 - 入参:', {
+    timestamp: new Date().toISOString(),
+    hasOCR: !!config.ocr,
+    ocrProvider: config.ocr?.provider,
+    hasVision: !!config.vision,
+    visionProvider: config.vision?.provider
+  })
+
+  const startTime = Date.now()
+
   return wrapResponse(async () => {
-    return await imageRecognitionService.test(config)
+    const result = await imageRecognitionService.test(config)
+
+    const duration = Date.now() - startTime
+    console.log('[IPC:ImageRecognition] test 完成 - 出参:', {
+      ocrSuccess: result.ocr?.success,
+      ocrError: result.ocr?.error,
+      visionSuccess: result.vision?.success,
+      visionError: result.vision?.error,
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString()
+    })
+
+    return result
   })
 }
 

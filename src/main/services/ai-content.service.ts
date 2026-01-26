@@ -143,6 +143,18 @@ export class AIContentService {
       temperature: config.temperature || this.DEFAULT_TEMPERATURE
     }
 
+    // Validate configuration
+    this.validateConfig()
+
+    // Log configuration details
+    console.log('[AIContentService] 服务初始化:', {
+      apiKeyPrefix: this.config.apiKey ? `${this.config.apiKey.substring(0, 8)}...` : 'N/A',
+      baseUrl: this.config.baseUrl,
+      model: this.config.model,
+      maxTokens: this.config.maxTokens,
+      temperature: this.config.temperature
+    })
+
     // Create axios instance with default configuration
     this.axiosInstance = axios.create({
       baseURL: this.config.baseUrl,
@@ -155,15 +167,42 @@ export class AIContentService {
   }
 
   /**
-   * Validate configuration
+   * Validate configuration with detailed error messages
    */
   private validateConfig(): void {
+    const missingFields: string[] = []
+    const configDetails: string[] = []
+
+    // Check API Key
     if (!this.config.apiKey || this.config.apiKey.trim() === '') {
+      missingFields.push('API密钥 (apiKey)')
+    } else {
+      configDetails.push(`apiKey: ${this.config.apiKey.substring(0, 8)}...`)
+    }
+
+    // Log configuration details
+    console.log('[AIContentService] 配置验证:', {
+      hasApiKey: !!this.config.apiKey,
+      baseUrl: this.config.baseUrl || this.DEFAULT_BASE_URL,
+      model: this.config.model || this.DEFAULT_MODEL,
+      config: configDetails
+    })
+
+    if (missingFields.length > 0) {
+      const errorMessage = `AI内容生成服务配置不完整\n\n缺失配置项:\n${missingFields.map(f => `  • ${f}`).join('\n')}\n\n请按以下步骤配置:\n1. 打开"设置"页面\n2. 进入"AI 服务"选项卡\n3. 在"内容生成服务"部分填写 API 密钥\n4. 可选: 自定义 API 端点和模型名称\n5. 保存设置后重新连接`
+
+      console.error('[AIContentService] 配置验证失败:', {
+        missingFields,
+        allFields: ['apiKey', 'baseUrl (optional)', 'model (optional)']
+      })
+
       throw new AIContentError(
         AIContentErrorCode.API_KEY_INVALID,
-        'API密钥未配置或为空'
+        errorMessage
       )
     }
+
+    console.log('[AIContentService] 配置验证通过')
   }
 
   /**

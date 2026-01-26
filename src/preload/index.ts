@@ -35,6 +35,10 @@ const electronAPI = {
       ipcRenderer.invoke('screenshot:captureFullScreen'),
     captureScreenById: (screenId: string) =>
       ipcRenderer.invoke('screenshot:captureScreenById', screenId),
+    openRegionSelector: () =>
+      ipcRenderer.invoke('screenshot:openRegionSelector'),
+    getDesktopCapture: () =>
+      ipcRenderer.invoke('screenshot:getDesktopCapture'),
     save: (data: { screenshotId: string; filename?: string }) =>
       ipcRenderer.invoke('screenshot:save', data),
     delete: (data: { screenshotId: string; deleteFile?: boolean }) =>
@@ -69,6 +73,7 @@ const electronAPI = {
     selectDataPath: () => ipcRenderer.invoke('settings:selectDataPath'),
     selectScreenshotPath: () => ipcRenderer.invoke('settings:selectScreenshotPath'),
     openDataFolder: () => ipcRenderer.invoke('settings:openDataFolder'),
+    openLogsFolder: () => ipcRenderer.invoke('settings:openLogsFolder'),
     calculateStorageSize: () => ipcRenderer.invoke('settings:calculateStorageSize'),
     getPaths: () => ipcRenderer.invoke('settings:getPaths'),
     reset: () => ipcRenderer.invoke('settings:reset'),

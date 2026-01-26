@@ -10,6 +10,14 @@ export default defineConfig({
         '@main': resolve('src/main'),
         '@preload': resolve('src/preload')
       }
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          // Copy screenshot-selector.html to main build output
+          // This will be handled by a custom script
+        }
+      }
     }
   },
   preload: {
@@ -34,6 +42,8 @@ export default defineConfig({
           additionalData: `@use "@/assets/styles/variables.scss" as *;`
         }
       }
-    }
+    },
+    // Ensure screenshot-selector.html is copied to the output
+    publicDir: 'src/renderer/public'
   }
 })

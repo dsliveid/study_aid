@@ -103,6 +103,7 @@ export class SpeechRecognitionService extends EventEmitter {
   // Audio processing
   private audioContext: any = null
   private isRecording = false
+  private isFirstAudioFrame = true
 
   // Configuration defaults
   private readonly DEFAULT_HOST = 'wss://iat-api.xfyun.cn/v2/iat'
@@ -115,22 +116,58 @@ export class SpeechRecognitionService extends EventEmitter {
   }
 
   /**
-   * Validate configuration
+   * Validate configuration with detailed error messages
    */
   private validateConfig(): void {
+    const missingFields: string[] = []
+    const configDetails: string[] = []
+
+    // Check API Key
     if (!this.config.apiKey || this.config.apiKey.trim() === '') {
+      missingFields.push('API密钥 (apiKey)')
+    } else {
+      configDetails.push(`apiKey: ${this.config.apiKey.substring(0, 8)}...`)
+    }
+
+    // Check App ID
+    if (!this.config.appId || this.config.appId.trim() === '') {
+      missingFields.push('应用ID (appId)')
+    } else {
+      configDetails.push(`appId: ${this.config.appId}`)
+    }
+
+    // Check API Secret (required for Xunfei)
+    if (!this.config.apiSecret || this.config.apiSecret.trim() === '') {
+      missingFields.push('API密钥Secret (apiSecret)')
+    } else {
+      configDetails.push(`apiSecret: ${this.config.apiSecret.substring(0, 8)}...`)
+    }
+
+    // Log configuration details
+    console.log('[SpeechRecognition] 配置验证:', {
+      hasApiKey: !!this.config.apiKey,
+      hasAppId: !!this.config.appId,
+      hasApiSecret: !!this.config.apiSecret,
+      provider: 'Xunfei (科大讯飞)',
+      config: configDetails
+    })
+
+    if (missingFields.length > 0) {
+      const errorMessage = `语音识别服务配置不完整\n\n缺失配置项:\n${missingFields.map(f => `  • ${f}`).join('\n')}\n\n请按以下步骤配置:\n1. 打开"设置"页面\n2. 进入"AI 服务"选项卡\n3. 在"语音识别服务"部分填写完整信息\n4. 科大讯飞服务需要: API密钥、应用ID、API密钥Secret`
+
+      console.error('[SpeechRecognition] 配置验证失败:', {
+        missingFields,
+        allFields: ['apiKey', 'appId', 'apiSecret'],
+        provider: 'Xunfei (科大讯飞)'
+      })
+
       throw new SpeechRecognitionError(
         SpeechErrorCode.CONFIG_INVALID,
-        'API密钥未配置'
+        errorMessage
       )
     }
 
-    if (!this.config.appId || this.config.appId.trim() === '') {
-      throw new SpeechRecognitionError(
-        SpeechErrorCode.CONFIG_INVALID,
-        '应用ID未配置'
-      )
-    }
+    console.log('[SpeechRecognition] 配置验证通过')
   }
 
   /**
@@ -146,8 +183,15 @@ export class SpeechRecognitionService extends EventEmitter {
    */
   async connect(): Promise<void> {
     if (this.status === RecognitionStatus.CONNECTED || this.status === RecognitionStatus.RECOGNIZING) {
+      console.log('[SpeechRecognition] 已连接，跳过连接请求')
       return
     }
+
+    console.log('[SpeechRecognition] 开始连接语音识别服务...', {
+      provider: 'Xunfei (科大讯飞)',
+      host: this.DEFAULT_HOST,
+      status: this.status
+    })
 
     this.status = RecognitionStatus.CONNECTING
     this.emit('statusChange', this.status)
@@ -155,9 +199,20 @@ export class SpeechRecognitionService extends EventEmitter {
     return new Promise((resolve, reject) => {
       try {
         const url = this.getWebSocketUrl()
+
+        console.log('[SpeechRecognition] WebSocket 连接参数:', {
+          url: url.split('?')[0], // 隐藏认证参数
+          hasAuthParams: url.includes('authorization'),
+          timestamp: new Date().toISOString()
+        })
+
         this.ws = new WebSocket(url)
 
         this.ws.on('open', () => {
+          console.log('[SpeechRecognition] WebSocket 连接成功 ✓', {
+            timestamp: new Date().toISOString(),
+            status: 'CONNECTED'
+          })
           this.status = RecognitionStatus.CONNECTED
           this.reconnectAttempts = 0
           this.emit('statusChange', this.status)
@@ -170,7 +225,11 @@ export class SpeechRecognitionService extends EventEmitter {
         })
 
         this.ws.on('error', (error: Error) => {
-          console.error('WebSocket error:', error)
+          console.error('[SpeechRecognition] WebSocket 错误 ✗', {
+            error: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString()
+          })
           this.handleError(new SpeechRecognitionError(
             SpeechErrorCode.CONNECTION_FAILED,
             '连接失败',
@@ -180,6 +239,10 @@ export class SpeechRecognitionService extends EventEmitter {
         })
 
         this.ws.on('close', () => {
+          console.log('[SpeechRecognition] WebSocket 连接关闭', {
+            wasConnected: this.status === RecognitionStatus.CONNECTED,
+            timestamp: new Date().toISOString()
+          })
           this.handleDisconnect()
           if (this.status === RecognitionStatus.CONNECTING) {
             reject(new SpeechRecognitionError(
@@ -202,6 +265,15 @@ export class SpeechRecognitionService extends EventEmitter {
     try {
       const message = JSON.parse(data.toString())
 
+      // Log all messages for debugging
+      console.log('[SpeechRecognition] 收到服务器消息:', {
+        code: message.code,
+        hasData: !!message.data,
+        hasResult: !!(message.data && message.data.result),
+        message: message.message || '',
+        sid: message.sid
+      })
+
       if (message.code !== 0) {
         this.handleError(new SpeechRecognitionError(
           SpeechErrorCode.SERVICE_ERROR,
@@ -213,14 +285,16 @@ export class SpeechRecognitionService extends EventEmitter {
       if (message.data && message.data.result) {
         const result = message.data.result
 
+        console.log('[SpeechRecognition] 识别结果详情:', {
+          hasWs: !!result.ws,
+          pgs: result.pgs,
+          sn: result.sn,
+          text: result.ws ? this.buildTextFromResult(result) : ''
+        })
+
         if (result.ws) {
           // Build text from word segments
-          let text = ''
-          for (const ws of result.ws) {
-            for (const cw of ws.cw) {
-              text += cw.w
-            }
-          }
+          let text = this.buildTextFromResult(result)
 
           const recognitionResult: RecognitionResult = {
             text,
@@ -230,10 +304,21 @@ export class SpeechRecognitionService extends EventEmitter {
             endTime: result.sn ? (result.sn + 1) * 100 : undefined
           }
 
+          console.log('[SpeechRecognition] 发出识别结果事件:', {
+            text,
+            isFinal: recognitionResult.isFinal,
+            confidence: recognitionResult.confidence
+          })
+
           this.emit('result', recognitionResult)
 
           if (recognitionResult.isFinal) {
             this.recognitionResults.push(text)
+            console.log('[SpeechRecognition] 添加最终结果，累计:', {
+              currentText: text,
+              allText: this.recognitionResults.join(''),
+              count: this.recognitionResults.length
+            })
             this.emit('finalResult', {
               text: this.recognitionResults.join(''),
               allResults: [...this.recognitionResults]
@@ -242,8 +327,21 @@ export class SpeechRecognitionService extends EventEmitter {
         }
       }
     } catch (error) {
-      console.error('Failed to parse message:', error)
+      console.error('[SpeechRecognition] 解析消息失败:', error)
     }
+  }
+
+  /**
+   * Build text from recognition result
+   */
+  private buildTextFromResult(result: any): string {
+    let text = ''
+    for (const ws of result.ws) {
+      for (const cw of ws.cw) {
+        text += cw.w
+      }
+    }
+    return text
   }
 
   /**
@@ -287,8 +385,14 @@ export class SpeechRecognitionService extends EventEmitter {
     }
 
     this.isRecording = true
+    this.isFirstAudioFrame = true
     this.status = RecognitionStatus.RECOGNIZING
     this.recognitionResults = []
+
+    console.log('[SpeechRecognition] 开始识别', {
+      timestamp: new Date().toISOString()
+    })
+
     this.emit('statusChange', this.status)
     this.emit('recognitionStarted')
   }
@@ -308,10 +412,17 @@ export class SpeechRecognitionService extends EventEmitter {
       return
     }
 
+    // Determine frame status: 1 = first frame, 2 = continue, 3 = last frame
+    let frameStatus = 2 // continue
+    if (this.isFirstAudioFrame) {
+      frameStatus = 1 // first frame
+      this.isFirstAudioFrame = false
+    }
+
     // Send audio data
     const frame = {
       data: {
-        status: this.isRecording ? 1 : 2, // 1: first frame, 2: continue, 3: last frame
+        status: frameStatus,
         format: this.config.format || 'audio/L16;rate=16000',
         audio: audioBuffer.toString('base64'),
         encoding: 'raw'
@@ -319,6 +430,12 @@ export class SpeechRecognitionService extends EventEmitter {
     }
 
     this.ws.send(JSON.stringify(frame))
+
+    console.log('[SpeechRecognition] 发送音频帧', {
+      status: frameStatus,
+      dataSize: audioBuffer.length,
+      isFirst: this.isFirstAudioFrame
+    })
   }
 
   /**
@@ -329,15 +446,20 @@ export class SpeechRecognitionService extends EventEmitter {
       return
     }
 
+    console.log('[SpeechRecognition] 停止识别', {
+      timestamp: new Date().toISOString(),
+      resultCount: this.recognitionResults.length
+    })
+
     this.isRecording = false
     this.status = RecognitionStatus.CONNECTED
     this.emit('statusChange', this.status)
     this.emit('recognitionStopped')
 
-    // Send end frame
+    // Send end frame (status = 3)
     const endFrame = {
       data: {
-        status: 2, // End frame
+        status: 3, // End frame
         format: this.config.format || 'audio/L16;rate=16000',
         audio: '',
         encoding: 'raw'
@@ -345,6 +467,15 @@ export class SpeechRecognitionService extends EventEmitter {
     }
 
     this.ws.send(JSON.stringify(endFrame))
+
+    console.log('[SpeechRecognition] 发送结束帧 (status=3)')
+
+    // Log final results
+    const finalText = this.recognitionResults.join('')
+    console.log('[SpeechRecognition] 当前识别结果:', {
+      text: finalText,
+      resultCount: this.recognitionResults.length
+    })
   }
 
   /**

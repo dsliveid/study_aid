@@ -64,6 +64,7 @@ export interface AIServiceConfig {
   provider: string
   apiKey: string
   appId?: string
+  apiSecret?: string
 }
 
 export interface AIImageServiceConfig {

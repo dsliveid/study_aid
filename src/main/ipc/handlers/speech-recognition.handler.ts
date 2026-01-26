@@ -52,6 +52,21 @@ async function initializeSpeechRecognitionServiceHandler(
   _event: IpcMainInvokeEvent,
   config: SpeechRecognitionConfig
 ): Promise<IpcResponse<void>> {
+  console.log('[IPC:SpeechRecognition] initialize 调用 - 入参:', {
+    timestamp: new Date().toISOString(),
+    hasApiKey: !!config.apiKey,
+    apiKeyPrefix: config.apiKey ? `${config.apiKey.substring(0, 8)}...` : 'N/A',
+    hasAppId: !!config.appId,
+    appId: config.appId || 'N/A',
+    hasApiSecret: !!config.apiSecret,
+    apiSecretPrefix: config.apiSecret ? `${config.apiSecret.substring(0, 8)}...` : 'N/A',
+    provider: 'Xunfei (科大讯飞)',
+    language: config.language || 'zh_cn',
+    format: config.format || 'audio/L16;rate=16000'
+  })
+
+  const startTime = Date.now()
+
   return wrapResponse(async () => {
     const service = initializeSpeechRecognitionService(config)
 
@@ -60,14 +75,24 @@ async function initializeSpeechRecognitionServiceHandler(
 
     service.on('statusChange', (status: RecognitionStatus) => {
       _event.sender.send('speech-recognition:statusChange', { status })
+      console.log('[IPC:SpeechRecognition] statusChange 事件 - 出参:', { status })
     })
 
     service.on('result', (result: RecognitionResult) => {
       _event.sender.send('speech-recognition:result', result)
+      console.log('[IPC:SpeechRecognition] result 事件 - 出参:', {
+        text: result.text.substring(0, 50) + '...',
+        isFinal: result.isFinal,
+        confidence: result.confidence
+      })
     })
 
     service.on('finalResult', (result: { text: string; allResults: string[] }) => {
       _event.sender.send('speech-recognition:finalResult', result)
+      console.log('[IPC:SpeechRecognition] finalResult 事件 - 出参:', {
+        textLength: result.text.length,
+        allResultsCount: result.allResults.length
+      })
     })
 
     service.on('error', (error: any) => {
@@ -75,26 +100,42 @@ async function initializeSpeechRecognitionServiceHandler(
         code: error.code,
         message: error.message
       })
+      console.error('[IPC:SpeechRecognition] error 事件 - 出参:', {
+        code: error.code,
+        message: error.message
+      })
     })
 
     service.on('connected', () => {
       _event.sender.send('speech-recognition:connected')
+      console.log('[IPC:SpeechRecognition] connected 事件')
     })
 
     service.on('disconnected', () => {
       _event.sender.send('speech-recognition:disconnected')
+      console.log('[IPC:SpeechRecognition] disconnected 事件')
     })
 
     service.on('reconnecting', (attempt: number) => {
       _event.sender.send('speech-recognition:reconnecting', { attempt })
+      console.log('[IPC:SpeechRecognition] reconnecting 事件:', { attempt })
     })
 
     service.on('recognitionStarted', () => {
       _event.sender.send('speech-recognition:started')
+      console.log('[IPC:SpeechRecognition] started 事件')
     })
 
     service.on('recognitionStopped', () => {
       _event.sender.send('speech-recognition:stopped')
+      console.log('[IPC:SpeechRecognition] stopped 事件')
+    })
+
+    const duration = Date.now() - startTime
+    console.log('[IPC:SpeechRecognition] initialize 完成 - 出参:', {
+      success: true,
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString()
     })
   })
 }
@@ -105,9 +146,22 @@ async function initializeSpeechRecognitionServiceHandler(
 async function connectSpeechRecognitionHandler(
   _event: IpcMainInvokeEvent
 ): Promise<IpcResponse<void>> {
+  console.log('[IPC:SpeechRecognition] connect 调用 - 入参: {}', {
+    timestamp: new Date().toISOString()
+  })
+
+  const startTime = Date.now()
+
   return wrapResponse(async () => {
     const service = getSpeechRecognitionService()
     await service.connect()
+
+    const duration = Date.now() - startTime
+    console.log('[IPC:SpeechRecognition] connect 完成 - 出参:', {
+      success: true,
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString()
+    })
   })
 }
 
@@ -117,9 +171,22 @@ async function connectSpeechRecognitionHandler(
 async function startRecognitionHandler(
   _event: IpcMainInvokeEvent
 ): Promise<IpcResponse<void>> {
+  console.log('[IPC:SpeechRecognition] start 调用 - 入参: {}', {
+    timestamp: new Date().toISOString()
+  })
+
+  const startTime = Date.now()
+
   return wrapResponse(async () => {
     const service = getSpeechRecognitionService()
     await service.startRecognition()
+
+    const duration = Date.now() - startTime
+    console.log('[IPC:SpeechRecognition] start 完成 - 出参:', {
+      success: true,
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString()
+    })
   })
 }
 
@@ -129,10 +196,27 @@ async function startRecognitionHandler(
 async function stopRecognitionHandler(
   _event: IpcMainInvokeEvent
 ): Promise<IpcResponse<{ text: string }>> {
+  console.log('[IPC:SpeechRecognition] stop 调用 - 入参: {}', {
+    timestamp: new Date().toISOString()
+  })
+
+  const startTime = Date.now()
+
   return wrapResponse(async () => {
     const service = getSpeechRecognitionService()
     service.stopRecognition()
-    return { text: service.getResults() }
+    const text = service.getResults()
+
+    const duration = Date.now() - startTime
+    console.log('[IPC:SpeechRecognition] stop 完成 - 出参:', {
+      success: true,
+      textLength: text.length,
+      textPreview: text.substring(0, 50) + (text.length > 50 ? '...' : ''),
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString()
+    })
+
+    return { text }
   })
 }
 
@@ -204,13 +288,30 @@ async function testSpeechRecognitionServiceHandler(
   _event: IpcMainInvokeEvent,
   config: SpeechRecognitionConfig
 ): Promise<IpcResponse<{ success: boolean; message: string }>> {
+  console.log('[IPC:SpeechRecognition] test 调用 - 入参:', {
+    timestamp: new Date().toISOString(),
+    hasApiKey: !!config.apiKey,
+    apiKeyPrefix: config.apiKey ? `${config.apiKey.substring(0, 8)}...` : 'N/A',
+    hasAppId: !!config.appId,
+    appId: config.appId || 'N/A',
+    hasApiSecret: !!config.apiSecret,
+    apiSecretPrefix: config.apiSecret ? `${config.apiSecret.substring(0, 8)}...` : 'N/A',
+    provider: 'Xunfei (科大讯飞)'
+  })
+
+  const startTime = Date.now()
+
   return wrapResponse(async () => {
     // Create a temporary service instance for testing
     const tempService = initializeSpeechRecognitionService(config)
 
     try {
+      console.log('[IPC:SpeechRecognition] test - 开始连接测试...')
+
       // Try to connect
       await tempService.connect()
+
+      console.log('[IPC:SpeechRecognition] test - 连接成功，等待稳定...')
 
       // Wait a moment to ensure connection is stable
       await new Promise(resolve => setTimeout(resolve, 1000))
@@ -218,16 +319,34 @@ async function testSpeechRecognitionServiceHandler(
       // Disconnect
       tempService.disconnect()
 
+      console.log('[IPC:SpeechRecognition] test - 测试完成，重置服务')
+
       // Reset to avoid affecting the main instance
       resetSpeechRecognitionService()
 
-      return {
+      const duration = Date.now() - startTime
+      const result = {
         success: true,
         message: '语音识别服务连接成功'
       }
-    } catch (error) {
+
+      console.log('[IPC:SpeechRecognition] test 完成 - 出参:', {
+        ...result,
+        duration: `${duration}ms`,
+        timestamp: new Date().toISOString()
+      })
+
+      return result
+    } catch (error: any) {
+      console.error('[IPC:SpeechRecognition] test 失败:', {
+        error: error.message,
+        code: error.code,
+        stack: error.stack
+      })
+
       // Reset even on error
       resetSpeechRecognitionService()
+
       throw error
     }
   })

@@ -134,9 +134,15 @@ export class ScreenshotService {
   async openRegionSelector(): Promise<ScreenshotData | null> {
     return new Promise((resolve, reject) => {
       try {
-        // Create a transparent fullscreen window for selection
-        const { width, height } = screen.getPrimaryDisplay().workAreaSize
+        console.log('[ScreenshotService] 打开区域选择窗口...')
 
+        // Get primary display size for fullscreen coverage
+        const primaryDisplay = screen.getPrimaryDisplay()
+        const { width, height } = primaryDisplay.bounds
+
+        console.log('[ScreenshotService] 屏幕尺寸:', { width, height, bounds: primaryDisplay.bounds })
+
+        // Create a transparent fullscreen window for selection
         this.screenshotWindow = new BrowserWindow({
           width,
           height,
@@ -144,20 +150,71 @@ export class ScreenshotService {
           y: 0,
           frame: false,
           transparent: true,
+          backgroundColor: '#00000000', // Fully transparent
           alwaysOnTop: true,
           skipTaskbar: true,
           resizable: false,
+          focusable: true, // Allow window to receive focus
+          show: false, // Don't show immediately, will show after load
           webPreferences: {
             nodeIntegration: true,
-            contextIsolation: false
+            contextIsolation: false,
+            enableRemoteModule: true,
+            webSecurity: false // Allow desktopCapturer
           }
         })
 
+        // Determine the correct path for screenshot-selector.html
+        const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
+        const htmlPath = isDev
+          ? join(__dirname, '../renderer/screenshot-selector.html')
+          : join(__dirname, 'screenshot-selector.html')
+
+        console.log('[ScreenshotService] 加载截图选择器:', {
+          isDev,
+          __dirname,
+          htmlPath
+        })
+
+        // Show window when ready
+        this.screenshotWindow.once('ready-to-show', () => {
+          console.log('[ScreenshotService] 窗口准备显示，正在显示...')
+          this.screenshotWindow?.show()
+          this.screenshotWindow?.focus()
+          console.log('[ScreenshotService] 窗口已显示并聚焦')
+        })
+
+        // Handle window ready to show
+        this.screenshotWindow.webContents.on('did-finish-load', () => {
+          console.log('[ScreenshotService] HTML 加载完成')
+        })
+
+        // Handle window load failures
+        this.screenshotWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+          console.error('[ScreenshotService] HTML 加载失败:', {
+            errorCode,
+            errorDescription,
+            validatedURL
+          })
+        })
+
+        // Handle window console messages
+        this.screenshotWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
+          console.log(`[ScreenshotSelector Window] ${level}:`, message)
+        })
+
         // Load the screenshot selector HTML
-        this.screenshotWindow.loadFile(join(__dirname, '../../../renderer/screenshot-selector.html'))
+        this.screenshotWindow.loadFile(htmlPath).then(() => {
+          console.log('[ScreenshotService] loadFile 成功')
+        }).catch((err) => {
+          console.error('[ScreenshotService] loadFile 失败:', err)
+          reject(err)
+        })
 
         // Handle screenshot result
         this.screenshotWindow.webContents.on('ipc-message', (event, channel, data) => {
+          console.log('[ScreenshotService] 收到 IPC 消息:', channel, 'data:', data)
+
           if (channel === 'screenshot-selected') {
             const screenshot: ScreenshotData = {
               id: this.generateId(),
@@ -165,21 +222,26 @@ export class ScreenshotService {
               timestamp: Date.now()
             }
             this.screenshots.set(screenshot.id, screenshot)
+            console.log('[ScreenshotService] 截图已保存:', screenshot.id, 'dataUrl length:', screenshot.dataUrl?.length)
             this.closeSelectorWindow()
             resolve(screenshot)
           } else if (channel === 'screenshot-cancelled') {
+            console.log('[ScreenshotService] 截图已取消')
             this.closeSelectorWindow()
             resolve(null)
           }
         })
 
         this.screenshotWindow.on('closed', () => {
+          console.log('[ScreenshotService] 选择窗口已关闭')
           this.screenshotWindow = null
           // If cancelled without explicit message
           resolve(null)
         })
+
+        console.log('[ScreenshotService] 区域选择窗口创建完成')
       } catch (error) {
-        console.error('Failed to open region selector:', error)
+        console.error('[ScreenshotService] Failed to open region selector:', error)
         reject(error)
       }
     })

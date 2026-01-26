@@ -124,6 +124,16 @@
                   @blur="saveSettings"
                 />
               </el-form-item>
+
+              <el-form-item label="API 密钥 Secret">
+                <el-input
+                  v-model="settings.ai.speech.apiSecret"
+                  type="password"
+                  show-password
+                  placeholder="请输入API Secret（科大讯飞必需）"
+                  @blur="saveSettings"
+                />
+              </el-form-item>
             </div>
 
             <el-divider />
@@ -255,6 +265,9 @@
               <el-button @click="openDataFolder">
                 打开数据文件夹
               </el-button>
+              <el-button @click="openLogsFolder">
+                查看日志
+              </el-button>
             </el-form-item>
           </el-form>
 
@@ -340,7 +353,8 @@ const defaultSettings: Settings = {
     speech: {
       provider: 'xunfei',
       apiKey: '',
-      appId: ''
+      appId: '',
+      apiSecret: ''
     },
     image: {
       provider: 'qwen',
@@ -434,7 +448,7 @@ function handleShortcutChange(key: string) {
 async function handleSpeechProviderChange() {
   // Initialize speech recognition service with new config
   try {
-    const speechConfig = settings.value.ai.speech
+    const speechConfig = JSON.parse(JSON.stringify(settings.value.ai.speech))
     await window.electronAPI.speechRecognition.initialize?.(speechConfig)
     await saveSettings()
   } catch (error: any) {
@@ -481,7 +495,9 @@ async function handleContentProviderChange() {
 
 async function saveSettings() {
   try {
-    await window.electronAPI.settings.set?.(settings.value)
+    // Create a clean plain object copy to avoid cloning issues with Vue reactive objects
+    const settingsToSave = JSON.parse(JSON.stringify(settings.value))
+    await window.electronAPI.settings.set?.(settingsToSave)
     ElMessage.success('设置已保存')
   } catch (error: any) {
     ElMessage.error(error.message || '保存设置失败')
@@ -542,7 +558,8 @@ async function testAllServices() {
     const speechService = settings.value.ai.speech
     if (speechService.apiKey && speechService.appId) {
       try {
-        const result = await window.electronAPI.speechRecognition.test?.(speechService)
+        const speechConfig = JSON.parse(JSON.stringify(speechService))
+        const result = await window.electronAPI.speechRecognition.test?.(speechConfig)
         if (result?.success) {
           results.push('✓ 语音识别服务测试成功')
         } else {
@@ -630,6 +647,15 @@ async function openDataFolder() {
     await window.electronAPI.settings.openDataFolder?.()
   } catch (error: any) {
     ElMessage.error(error.message || '打开文件夹失败')
+  }
+}
+
+async function openLogsFolder() {
+  try {
+    await window.electronAPI.settings.openLogsFolder?.()
+    ElMessage.success('已打开日志文件夹')
+  } catch (error: any) {
+    ElMessage.error(error.message || '打开日志文件夹失败')
   }
 }
 

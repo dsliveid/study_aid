@@ -236,14 +236,43 @@ const handleConnect = async () => {
   status.value = 'connecting'
 
   try {
+    console.log('[VoiceRecorder] 开始连接语音识别服务...')
+
     const settings = await window.electronAPI.settings.get?.()
     const config = settings?.data?.ai?.speech
 
-    if (!config?.apiKey || !config?.appId) {
-      ElMessage.warning('请先在设置中配置语音识别服务')
+    console.log('[VoiceRecorder] 读取到的配置:', {
+      hasApiKey: !!config?.apiKey,
+      hasAppId: !!config?.appId,
+      hasApiSecret: !!config?.apiSecret,
+      provider: config?.provider || 'N/A'
+    })
+
+    // Check configuration with detailed messages
+    const missingFields: string[] = []
+    if (!config?.apiKey) missingFields.push('API 密钥')
+    if (!config?.appId) missingFields.push('应用 ID')
+    if (!config?.apiSecret) missingFields.push('API 密钥 Secret')
+
+    if (missingFields.length > 0) {
+      const message = `语音识别服务配置不完整\n\n缺失配置项：\n${missingFields.map(f => `  • ${f}`).join('\n')}\n\n配置步骤：\n1. 点击上方导航栏的「设置」\n2. 进入「AI 服务」选项卡\n3. 在「语音识别服务」部分填写：\n   - API 密钥\n   - 应用 ID\n   - API 密钥 Secret\n4. 保存设置后重新连接`
+
+      console.warn('[VoiceRecorder] 配置不完整:', { missingFields })
+
+      ElMessage({
+        message,
+        type: 'warning',
+        duration: 8000,
+        dangerouslyUseHTMLString: false,
+        customClass: 'config-warning-message'
+      })
+
       status.value = 'idle'
+      isConnecting.value = false
       return
     }
+
+    console.log('[VoiceRecorder] 配置验证通过，开始初始化服务...')
 
     await window.electronAPI.speechRecognition?.initialize?.({
       apiKey: config.apiKey,
@@ -251,14 +280,20 @@ const handleConnect = async () => {
       apiSecret: config.apiSecret
     })
 
-    await window.electronAPI.speechRecognition?.connect?.()
+    console.log('[VoiceRecorder] 服务初始化完成，开始连接...')
 
-    isConnected.value = true
-    status.value = 'connected'
-    ElMessage.success('语音识别服务连接成功')
+    // The connection success message will be shown by the onConnected event listener
+    await window.electronAPI.speechRecognition?.connect?.()
   } catch (error: any) {
+    console.error('[VoiceRecorder] 连接失败:', {
+      message: error.message,
+      code: error.code,
+      stack: error.stack
+    })
+
     status.value = 'error'
-    ElMessage.error(error.message || '连接失败')
+    isConnected.value = false
+    // Error message will be shown by the onError event listener
   } finally {
     isConnecting.value = false
   }
@@ -282,22 +317,86 @@ const handleStartRecording = async () => {
 
   try {
     // Request microphone access
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        channelCount: 1,
+        sampleRate: 16000,
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
+      }
+    })
 
-    mediaRecorder = new MediaRecorder(stream)
-    audioChunks = []
+    console.log('[VoiceRecorder] 获取麦克风成功')
 
-    mediaRecorder.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        audioChunks.push(event.data)
+    // Create audio context for processing
+    const audioContext = new AudioContext({
+      sampleRate: 16000
+    })
+    const source = audioContext.createMediaStreamSource(stream)
+    const processor = audioContext.createScriptProcessor(4096, 1, 1)
+
+    let chunkCount = 0
+    const CHUNKS_PER_SECOND = 4 // Send 4 chunks per second (every 250ms)
+
+    processor.onaudioprocess = async (e) => {
+      if (!isRecording.value) return
+
+      chunkCount++
+
+      // Only send audio data every N chunks to reduce frequency
+      if (chunkCount % CHUNKS_PER_SECOND !== 0) return
+
+      const audioData = e.inputBuffer.getChannelData(0)
+
+      // Convert Float32Array to Int16Array (16-bit PCM)
+      const int16Data = new Int16Array(audioData.length)
+      for (let i = 0; i < audioData.length; i++) {
+        const s = Math.max(-1, Math.min(1, audioData[i]))
+        int16Data[i] = s < 0 ? s * 0x8000 : s * 0x7FFF
+      }
+
+      // Convert Int16Array to Uint8Array (buffer format for IPC)
+      const uint8Data = new Uint8Array(int16Data.buffer)
+
+      console.log('[VoiceRecorder] 发送音频帧:', {
+        size: uint8Data.length,
+        chunkCount,
+        isRecording: isRecording.value
+      })
+
+      try {
+        await window.electronAPI.speechRecognition?.sendAudio?.(uint8Data)
+      } catch (error) {
+        console.error('[VoiceRecorder] 发送音频数据失败:', error)
       }
     }
 
-    mediaRecorder.start(100) // Capture in 100ms chunks
+    source.connect(processor)
+    processor.connect(audioContext.destination)
+
+    // Store for cleanup
+    mediaRecorder = {
+      stream,
+      audioContext,
+      source,
+      processor,
+      stop: () => {
+        processor.disconnect()
+        source.disconnect()
+        audioContext.close()
+        stream.getTracks().forEach(track => track.stop())
+      }
+    } as any
+
+    console.log('[VoiceRecorder] 音频处理器设置完成')
+
     isRecording.value = true
 
     // Start speech recognition
+    console.log('[VoiceRecorder] 调用主进程开始识别')
     await window.electronAPI.speechRecognition?.start?.()
+    console.log('[VoiceRecorder] 主进程开始识别完成')
 
     isRecognizing.value = true
     status.value = 'recognizing'
@@ -308,6 +407,7 @@ const handleStartRecording = async () => {
 
     ElMessage.info('开始录音...')
   } catch (error: any) {
+    console.error('[VoiceRecorder] 启动录音失败:', error)
     ElMessage.error(error.message || '无法访问麦克风')
   } finally {
     isStarting.value = false
@@ -316,8 +416,10 @@ const handleStartRecording = async () => {
 
 const handleStopRecording = async () => {
   if (mediaRecorder && isRecording.value) {
-    mediaRecorder.stop()
-    mediaRecorder.stream.getTracks().forEach(track => track.stop())
+    // Stop the custom recorder
+    if (mediaRecorder.stop) {
+      mediaRecorder.stop()
+    }
     mediaRecorder = null
   }
 
@@ -327,12 +429,26 @@ const handleStopRecording = async () => {
 
   // Stop speech recognition
   try {
+    console.log('[VoiceRecorder] 停止语音识别，当前识别文本:', recognizedText.value)
     const result = await window.electronAPI.speechRecognition?.stop?.()
+    console.log('[VoiceRecorder] 停止识别结果:', result)
+
     if (result?.success && result.data) {
+      console.log('[VoiceRecorder] 最终识别文本:', result.data.text)
       finalText.value = result.data.text || recognizedText.value
       recognizedText.value = finalText.value
+
+      if (finalText.value) {
+        ElMessage.success(`识别完成：${finalText.value.substring(0, 50)}${finalText.value.length > 50 ? '...' : ''}`)
+      }
+    } else {
+      console.warn('[VoiceRecorder] 识别结果为空或失败:', result)
+      if (!recognizedText.value) {
+        ElMessage.warning('未识别到语音内容，请重试')
+      }
     }
   } catch (error: any) {
+    console.error('[VoiceRecorder] 停止识别失败:', error)
     ElMessage.error(error.message || '停止识别失败')
   }
 
@@ -376,6 +492,14 @@ const setupEventListeners = () => {
     console.log('Status changed:', newStatus)
   })
 
+  window.electronAPI.speechRecognition?.onConnected?.(() => {
+    if (isConnecting.value) {
+      isConnected.value = true
+      status.value = 'connected'
+      ElMessage.success('语音识别服务连接成功')
+    }
+  })
+
   window.electronAPI.speechRecognition?.onResult?.((result: any) => {
     if (result.text) {
       recognizedText.value = result.text
@@ -390,8 +514,13 @@ const setupEventListeners = () => {
   })
 
   window.electronAPI.speechRecognition?.onError?.((error: any) => {
-    ElMessage.error(error.message || '语音识别错误')
+    // Only show error message and update status if we're not in the process of connecting
+    // This prevents duplicate error messages during connection failures
+    if (!isConnecting.value) {
+      ElMessage.error(error.message || '语音识别错误')
+    }
     status.value = 'error'
+    isConnected.value = false
     isRecording.value = false
     isRecognizing.value = false
     stopDurationCounter()

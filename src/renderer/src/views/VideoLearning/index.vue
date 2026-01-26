@@ -251,18 +251,32 @@ const captureFullScreen = async () => {
 }
 
 const captureRegion = async () => {
-  showSourceDialog.value = true
-  loadingSources.value = true
+  console.log('[VideoLearning] 开始区域截图...')
 
   try {
-    const result = await window.electronAPI.screenshot.getScreenSources()
-    if (result.success && result.data) {
-      sources.value = result.data
+    ElMessage.info('拖动鼠标选择截图区域，按 ESC 键取消')
+
+    console.log('[VideoLearning] 调用 openRegionSelector API...')
+    const result = await window.electronAPI.screenshot.openRegionSelector?.()
+
+    console.log('[VideoLearning] openRegionSelector 返回结果:', {
+      hasResult: !!result,
+      success: result?.success,
+      hasData: !!result?.data,
+      dataKeys: result?.data ? Object.keys(result.data) : null
+    })
+
+    if (result?.success && result.data) {
+      console.log('[VideoLearning] 截图成功，dataUrl 长度:', result.data.dataUrl?.length)
+      currentScreenshot.value = result.data.dataUrl
+      ElMessage.success('区域截图成功')
+    } else {
+      // User cancelled the selection
+      console.log('[VideoLearning] 区域截图已取消或失败')
     }
   } catch (error: any) {
-    ElMessage.error(error.message || '获取截图源失败')
-  } finally {
-    loadingSources.value = false
+    console.error('[VideoLearning] 区域截图失败:', error)
+    ElMessage.error(error.message || '区域截图失败')
   }
 }
 
