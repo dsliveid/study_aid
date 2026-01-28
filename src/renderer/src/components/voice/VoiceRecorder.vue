@@ -334,18 +334,17 @@ const handleStartRecording = async () => {
       sampleRate: 16000
     })
     const source = audioContext.createMediaStreamSource(stream)
-    const processor = audioContext.createScriptProcessor(4096, 1, 1)
 
-    let chunkCount = 0
-    const CHUNKS_PER_SECOND = 4 // Send 4 chunks per second (every 250ms)
+    // 使用较小的缓冲区大小以获得更实时的音频处理
+    // 2048 个采样点 @ 16000Hz = 128ms 每个音频块
+    const processor = audioContext.createScriptProcessor(2048, 1, 1)
+
+    let frameCount = 0
 
     processor.onaudioprocess = async (e) => {
       if (!isRecording.value) return
 
-      chunkCount++
-
-      // Only send audio data every N chunks to reduce frequency
-      if (chunkCount % CHUNKS_PER_SECOND !== 0) return
+      frameCount++
 
       const audioData = e.inputBuffer.getChannelData(0)
 
@@ -359,11 +358,14 @@ const handleStartRecording = async () => {
       // Convert Int16Array to Uint8Array (buffer format for IPC)
       const uint8Data = new Uint8Array(int16Data.buffer)
 
-      console.log('[VoiceRecorder] 发送音频帧:', {
-        size: uint8Data.length,
-        chunkCount,
-        isRecording: isRecording.value
-      })
+      // 只在开始时打印日志，避免日志过多
+      if (frameCount <= 5 || frameCount % 50 === 0) {
+        console.log('[VoiceRecorder] 发送音频帧:', {
+          frame: frameCount,
+          size: uint8Data.length,
+          duration: audioData.length / 16000 // 秒
+        })
+      }
 
       try {
         await window.electronAPI.speechRecognition?.sendAudio?.(uint8Data)
@@ -372,31 +374,53 @@ const handleStartRecording = async () => {
       }
     }
 
-    source.connect(processor)
-    processor.connect(audioContext.destination)
-
-    // Store for cleanup
+    // Store for cleanup FIRST (before connecting audio nodes)
     mediaRecorder = {
       stream,
       audioContext,
       source,
       processor,
+      gainNode,  // Store gainNode for cleanup
       stop: () => {
-        processor.disconnect()
-        source.disconnect()
-        audioContext.close()
-        stream.getTracks().forEach(track => track.stop())
+        console.log('[VoiceRecorder] 清理音频资源...')
+        try {
+          if (gainNode) {
+            gainNode.disconnect()
+          }
+          processor.disconnect()
+          source.disconnect()
+          audioContext.close()
+          stream.getTracks().forEach(track => track.stop())
+          console.log('[VoiceRecorder] ✅ 音频资源清理完成')
+        } catch (error) {
+          console.error('[VoiceRecorder] ❌ Cleanup error:', error)
+        }
       }
     } as any
 
     console.log('[VoiceRecorder] 音频处理器设置完成')
 
+    // IMPORTANT: Set isRecording = true BEFORE connecting audio nodes!
+    // Otherwise onaudioprocess will skip all data
     isRecording.value = true
+    console.log('[VoiceRecorder] ✅ isRecording 设置为 true')
+
+    // Create a gain node to prevent audio feedback (set volume to 0)
+    // ScriptProcessorNode only works when connected to an output
+    const gainNode = audioContext.createGain()
+    gainNode.gain.value = 0  // Mute the output to prevent feedback
+
+    // Connect the audio graph: source -> processor -> gainNode -> destination
+    // The gainNode with volume 0 prevents audio feedback while keeping processor working
+    source.connect(processor)
+    processor.connect(gainNode)
+    gainNode.connect(audioContext.destination)
+    console.log('[VoiceRecorder] ✅ 音频节点连接完成 (包含静音输出)，音频处理回调已激活')
 
     // Start speech recognition
     console.log('[VoiceRecorder] 调用主进程开始识别')
     await window.electronAPI.speechRecognition?.start?.()
-    console.log('[VoiceRecorder] 主进程开始识别完成')
+    console.log('[VoiceRecorder] ✅ 主进程开始识别完成')
 
     isRecognizing.value = true
     status.value = 'recognizing'
@@ -501,15 +525,38 @@ const setupEventListeners = () => {
   })
 
   window.electronAPI.speechRecognition?.onResult?.((result: any) => {
-    if (result.text) {
+    console.log('[VoiceRecorder] onResult 事件触发:', {
+      hasResult: !!result,
+      hasText: !!result?.text,
+      text: result?.text || '(空)',
+      textLength: result?.text?.length || 0,
+      isFinal: result?.isFinal,
+      confidence: result?.confidence
+    })
+
+    if (result && result.text) {
       recognizedText.value = result.text
+      console.log('[VoiceRecorder] recognizedText 已更新:', recognizedText.value)
+    } else {
+      console.warn('[VoiceRecorder] onResult - result.text 为空')
     }
   })
 
   window.electronAPI.speechRecognition?.onFinalResult?.((result: any) => {
-    if (result.text) {
+    console.log('[VoiceRecorder] onFinalResult 事件触发:', {
+      hasResult: !!result,
+      hasText: !!result?.text,
+      text: result?.text || '(空)',
+      textLength: result?.text?.length || 0,
+      allResultsCount: result?.allResults?.length || 0
+    })
+
+    if (result && result.text) {
       finalText.value = result.text
       recognizedText.value = result.text
+      console.log('[VoiceRecorder] finalText 已更新:', finalText.value)
+    } else {
+      console.warn('[VoiceRecorder] onFinalResult - result.text 为空')
     }
   })
 

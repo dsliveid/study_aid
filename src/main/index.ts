@@ -47,6 +47,15 @@ function createWindow() {
   })
 
   mainWindow.on('closed', () => {
+    // Clean up speech recognition service when window is closed
+    // This prevents "Render frame was disposed" errors
+    try {
+      const { resetSpeechRecognitionService } = require('./services/speech-recognition.service')
+      resetSpeechRecognitionService()
+    } catch (error) {
+      // Ignore errors during cleanup
+    }
+
     mainWindow = null
   })
 }

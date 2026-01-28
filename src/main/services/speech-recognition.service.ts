@@ -336,11 +336,38 @@ export class SpeechRecognitionService extends EventEmitter {
    */
   private buildTextFromResult(result: any): string {
     let text = ''
+
+    // 添加详细日志以调试
+    console.log('[SpeechRecognition] buildTextFromResult - 原始数据:', {
+      hasWs: !!result.ws,
+      wsType: typeof result.ws,
+      wsLength: result.ws?.length,
+      wsData: result.ws ? JSON.stringify(result.ws).substring(0, 200) : 'N/A'
+    })
+
+    if (!result.ws || !Array.isArray(result.ws) || result.ws.length === 0) {
+      console.warn('[SpeechRecognition] buildTextFromResult - ws 为空或不是数组')
+      return text
+    }
+
     for (const ws of result.ws) {
+      if (!ws.cw || !Array.isArray(ws.cw) || ws.cw.length === 0) {
+        console.warn('[SpeechRecognition] buildTextFromResult - cw 为空或不是数组')
+        continue
+      }
+
       for (const cw of ws.cw) {
-        text += cw.w
+        if (cw.w && typeof cw.w === 'string') {
+          text += cw.w
+        }
       }
     }
+
+    console.log('[SpeechRecognition] buildTextFromResult - 构建结果:', {
+      text: text || '(空)',
+      length: text.length
+    })
+
     return text
   }
 

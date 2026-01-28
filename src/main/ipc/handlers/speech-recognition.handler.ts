@@ -1,4 +1,4 @@
-import { ipcMain, type IpcMainInvokeEvent } from 'electron'
+import { ipcMain, type IpcMainInvokeEvent, BrowserWindow } from 'electron'
 import {
   getSpeechRecognitionService,
   initializeSpeechRecognitionService,
@@ -17,6 +17,27 @@ interface IpcResponse<T = any> {
   data?: T
   error?: string
   code?: string
+}
+
+/**
+ * Get the currently focused window's webContents
+ * Falls back to the first available window if no focused window
+ */
+function getCurrentWebContents() {
+  const focusedWindow = BrowserWindow.getFocusedWindow()
+  if (focusedWindow && !focusedWindow.isDestroyed()) {
+    return focusedWindow.webContents
+  }
+
+  // Fall back to first available window
+  const windows = BrowserWindow.getAllWindows()
+  for (const win of windows) {
+    if (!win.isDestroyed()) {
+      return win.webContents
+    }
+  }
+
+  return null
 }
 
 /**
@@ -44,6 +65,46 @@ function wrapResponse<T>(fn: () => Promise<T>): Promise<IpcResponse<T>> {
  * Active sessions for managing recognition per window
  */
 const activeSessions = new Map<number, any>()
+
+/**
+ * Helper function to safely send IPC messages to renderer
+ * Always tries to use the current focused window, ignoring the provided webContents
+ * This ensures messages go to the active window even if the original sender was closed
+ */
+function safeSendToRenderer(_providedWebContents: any, channel: string, ...args: any[]): boolean {
+  try {
+    // Always get the current window instead of using the provided webContents
+    // This avoids issues where the original sender window was closed or reloaded
+    const webContents = getCurrentWebContents()
+    if (!webContents) {
+      return false
+    }
+
+    // Double-check the webContents is not destroyed
+    if (webContents.isDestroyed()) {
+      return false
+    }
+
+    // Check if we can access the mainFrame without errors
+    // Note: We don't check frame.url as it can throw security errors
+    try {
+      const frame = webContents.mainFrame
+      if (!frame) {
+        return false
+      }
+    } catch (frameError) {
+      // If accessing mainFrame throws, the frame is likely disposed
+      return false
+    }
+
+    // Send the message
+    webContents.send(channel, ...args)
+    return true
+  } catch (error: any) {
+    // Silently ignore all errors - the error is logged by Electron internally
+    return false
+  }
+}
 
 /**
  * Initialize speech recognition service handler
@@ -74,12 +135,12 @@ async function initializeSpeechRecognitionServiceHandler(
     service.removeAllListeners()
 
     service.on('statusChange', (status: RecognitionStatus) => {
-      _event.sender.send('speech-recognition:statusChange', { status })
+      safeSendToRenderer(_event.sender, 'speech-recognition:statusChange', { status })
       console.log('[IPC:SpeechRecognition] statusChange 事件 - 出参:', { status })
     })
 
     service.on('result', (result: RecognitionResult) => {
-      _event.sender.send('speech-recognition:result', result)
+      safeSendToRenderer(_event.sender, 'speech-recognition:result', result)
       console.log('[IPC:SpeechRecognition] result 事件 - 出参:', {
         text: result.text.substring(0, 50) + '...',
         isFinal: result.isFinal,
@@ -88,7 +149,7 @@ async function initializeSpeechRecognitionServiceHandler(
     })
 
     service.on('finalResult', (result: { text: string; allResults: string[] }) => {
-      _event.sender.send('speech-recognition:finalResult', result)
+      safeSendToRenderer(_event.sender, 'speech-recognition:finalResult', result)
       console.log('[IPC:SpeechRecognition] finalResult 事件 - 出参:', {
         textLength: result.text.length,
         allResultsCount: result.allResults.length
@@ -96,7 +157,7 @@ async function initializeSpeechRecognitionServiceHandler(
     })
 
     service.on('error', (error: any) => {
-      _event.sender.send('speech-recognition:error', {
+      safeSendToRenderer(_event.sender, 'speech-recognition:error', {
         code: error.code,
         message: error.message
       })
@@ -107,27 +168,27 @@ async function initializeSpeechRecognitionServiceHandler(
     })
 
     service.on('connected', () => {
-      _event.sender.send('speech-recognition:connected')
+      safeSendToRenderer(_event.sender, 'speech-recognition:connected')
       console.log('[IPC:SpeechRecognition] connected 事件')
     })
 
     service.on('disconnected', () => {
-      _event.sender.send('speech-recognition:disconnected')
+      safeSendToRenderer(_event.sender, 'speech-recognition:disconnected')
       console.log('[IPC:SpeechRecognition] disconnected 事件')
     })
 
     service.on('reconnecting', (attempt: number) => {
-      _event.sender.send('speech-recognition:reconnecting', { attempt })
+      safeSendToRenderer(_event.sender, 'speech-recognition:reconnecting', { attempt })
       console.log('[IPC:SpeechRecognition] reconnecting 事件:', { attempt })
     })
 
     service.on('recognitionStarted', () => {
-      _event.sender.send('speech-recognition:started')
+      safeSendToRenderer(_event.sender, 'speech-recognition:started')
       console.log('[IPC:SpeechRecognition] started 事件')
     })
 
     service.on('recognitionStopped', () => {
-      _event.sender.send('speech-recognition:stopped')
+      safeSendToRenderer(_event.sender, 'speech-recognition:stopped')
       console.log('[IPC:SpeechRecognition] stopped 事件')
     })
 
