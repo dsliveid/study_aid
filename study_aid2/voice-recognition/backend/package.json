@@ -1,0 +1,39 @@
+{
+  "name": "voice-recognition-backend",
+  "version": "1.0.0",
+  "description": "实时语音识别应用 - 后端",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src --ext .js",
+    "lint:fix": "eslint src --ext .js --fix"
+  },
+  "keywords": [
+    "websocket",
+    "xunfei",
+    "voice-recognition",
+    "audio-processing"
+  ],
+  "author": "Voice Recognition Team",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.2",
+    "crypto-js": "^4.2.0",
+    "dotenv": "^16.6.1",
+    "uuid": "^9.0.1",
+    "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.11",
+    "eslint": "^8.55.0",
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

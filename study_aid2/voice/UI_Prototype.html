@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>实时语音识别 - 界面原型</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
+        }
+
+        .audio-source-selector {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .audio-source-option {
+            flex: 1;
+            min-width: 200px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .audio-source-option:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        }
+
+        .audio-source-option.active {
+            border-color: #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        }
+
+        .audio-source-option .icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+        }
+
+        .audio-source-option .info {
+            flex: 1;
+        }
+
+        .audio-source-option .info h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .audio-source-option .info p {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .text-display {
+            background: #f8f9ff;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            min-height: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-size: 15px;
+            line-height: 1.8;
+            color: #333;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .text-display.placeholder {
+            color: #999;
+            font-style: italic;
+            text-align: center;
+            padding-top: 120px;
+        }
+
+        .text-display.recording {
+            background: #fff5f5;
+            border-color: #ff6b6b;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 14px 32px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 140px;
+            justify-content: center;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.5);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(86, 171, 47, 0.4);
+        }
+
+        .btn-success:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(86, 171, 47, 0.5);
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .status.recording {
+            background: #fff5f5;
+            color: #ff6b6b;
+            border: 2px solid #ff6b6b;
+        }
+
+        .status.stopped {
+            background: #f0f9ff;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .status .indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .status.recording .indicator {
+            background: #ff6b6b;
+        }
+
+        .status.stopped .indicator {
+            background: #667eea;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        .vbcable-notice {
+            background: #fff7e6;
+            border-left: 4px solid #faad14;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .vbcable-notice h4 {
+            color: #faad14;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .vbcable-notice p {
+            color: #666;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .vbcable-notice a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .vbcable-notice a:hover {
+            text-decoration: underline;
+        }
+
+        .stats {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-item .value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stat-item .label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        @media (max-width: 768px) {
+            .audio-source-selector {
+                flex-direction: column;
+            }
+
+            .audio-source-option {
+                min-width: 100%;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎤 实时语音识别</h1>
+            <p>基于科大讯飞API · 准确率97-98% · 延迟<300ms</p>
+        </div>
+
+        <div class="content">
+            <div class="section">
+                <div class="section-title">选择音频源</div>
+                <div class="audio-source-selector">
+                    <div class="audio-source-option active" onclick="selectAudioSource('microphone')">
+                        <div class="icon">🎤</div>
+                        <div class="info">
+                            <h3>麦克风</h3>
+                            <p>直接采集麦克风音频</p>
+                        </div>
+                    </div>
+                    <div class="audio-source-option" onclick="selectAudioSource('system')">
+                        <div class="icon">🖥️</div>
+                        <div class="info">
+                            <h3>系统音频</h3>
+                            <p>捕获本地视频音频（需VB-Cable）</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" id="vbcable-notice" style="display: none;">
+                <div class="vbcable-notice">
+                    <h4>⚠️ VB-Cable 未检测到</h4>
+                    <p>使用系统音频需要先安装VB-Cable虚拟音频设备。<br>
+                    <a href="VB-Cable_Setup_Guide.md" target="_blank">查看安装指南 →</a></p>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">识别结果</div>
+                <div class="text-display placeholder" id="text-display">
+                    识别结果将在这里实时显示...
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="status stopped" id="status-display">
+                    <div class="indicator"></div>
+                    <span>● 已停止</span>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="controls">
+                    <button class="btn btn-primary" id="btn-start" onclick="startRecording()">
+                        <span>🎙️</span>
+                        <span>开始录音</span>
+                    </button>
+                    <button class="btn btn-danger" id="btn-stop" onclick="stopRecording()" disabled>
+                        <span>⏹️</span>
+                        <span>停止录音</span>
+                    </button>
+                    <button class="btn btn-success" id="btn-save" onclick="saveAsTxt()" disabled>
+                        <span>💾</span>
+                        <span>保存为TXT</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="value" id="stat-duration">00:00</div>
+                    <div class="label">录音时长</div>
+                </div>
+                <div class="stat-item">
+                    <div class="value" id="stat-words">0</div>
+                    <div class="label">识别字数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="value" id="stat-accuracy">--</div>
+                    <div class="label">准确率</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isRecording = false;
+        let audioSource = 'microphone';
+        let recordingStartTime = null;
+        let timerInterval = null;
+        let recognizedText = '';
+
+        function selectAudioSource(source) {
+            audioSource = source;
+
+            const options = document.querySelectorAll('.audio-source-option');
+            options.forEach(option => {
+                option.classList.remove('active');
+            });
+
+            event.currentTarget.classList.add('active');
+
+            const notice = document.getElementById('vbcable-notice');
+            if (source === 'system') {
+                notice.style.display = 'block';
+            } else {
+                notice.style.display = 'none';
+            }
+        }
+
+        function startRecording() {
+            if (isRecording) return;
+
+            isRecording = true;
+            recordingStartTime = new Date();
+
+            updateUI();
+            startTimer();
+
+            const textDisplay = document.getElementById('text-display');
+            textDisplay.classList.remove('placeholder');
+            textDisplay.classList.add('recording');
+
+            recognizedText = '';
+
+            simulateRecognition();
+        }
+
+        function stopRecording() {
+            if (!isRecording) return;
+
+            isRecording = false;
+            stopTimer();
+
+            updateUI();
+
+            const textDisplay = document.getElementById('text-display');
+            textDisplay.classList.remove('recording');
+
+            clearInterval(recognitionInterval);
+        }
+
+        function saveAsTxt() {
+            if (!recognizedText.trim()) {
+                alert('没有可保存的内容');
+                return;
+            }
+
+            const blob = new Blob([recognizedText], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+
+            const now = new Date();
+            const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            a.download = `语音识别_${timestamp}.txt`;
+
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            alert('文件已保存');
+        }
+
+        function updateUI() {
+            const btnStart = document.getElementById('btn-start');
+            const btnStop = document.getElementById('btn-stop');
+            const btnSave = document.getElementById('btn-save');
+            const statusDisplay = document.getElementById('status-display');
+
+            if (isRecording) {
+                btnStart.disabled = true;
+                btnStop.disabled = false;
+                btnSave.disabled = true;
+
+                statusDisplay.className = 'status recording';
+                statusDisplay.innerHTML = '<div class="indicator"></div><span>● 录音中... (' + (audioSource === 'microphone' ? '麦克风' : '系统音频') + ')</span>';
+            } else {
+                btnStart.disabled = false;
+                btnStop.disabled = true;
+                btnSave.disabled = !recognizedText.trim();
+
+                statusDisplay.className = 'status stopped';
+                statusDisplay.innerHTML = '<div class="indicator"></div><span>● 已停止</span>';
+            }
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                const now = new Date();
+                const diff = now - recordingStartTime;
+                const minutes = Math.floor(diff / 60000);
+                const seconds = Math.floor((diff % 60000) / 1000);
+
+                document.getElementById('stat-duration').textContent =
+                    String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        let recognitionInterval;
+        function simulateRecognition() {
+            const sampleTexts = [
+                '这是一个实时语音识别的演示。',
+                '科大讯飞API提供高精度的语音识别服务。',
+                '识别准确率可以达到97%到98%。',
+                '支持中文、英文等多种语言的识别。',
+                '延迟控制在300毫秒以内。',
+                '可以实时显示识别结果。',
+                '支持将结果保存为TXT文件。',
+                '使用VB-Cable可以捕获系统音频。',
+                '适用于会议记录、内容创作等场景。'
+            ];
+
+            let index = 0;
+            recognitionInterval = setInterval(() => {
+                if (index < sampleTexts.length) {
+                    recognizedText += sampleTexts[index];
+                    document.getElementById('text-display').textContent = recognizedText;
+                    document.getElementById('stat-words').textContent = recognizedText.length;
+
+                    index++;
+
+                    if (index === sampleTexts.length) {
+                        document.getElementById('stat-accuracy').textContent = '97.5%';
+                    }
+                }
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

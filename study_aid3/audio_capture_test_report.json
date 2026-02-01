@@ -1,0 +1,253 @@
+{
+  "summary": {
+    "total_tests": 6,
+    "passed": 3,
+    "failed": 3,
+    "pass_rate": "50.0%"
+  },
+  "start_time": "2026-02-01T13:36:49.750517",
+  "end_time": "2026-02-01T13:36:53.370182",
+  "results": [
+    {
+      "test_name": "TC-AC-001: 麦克风设备枚举",
+      "passed": true,
+      "message": "找到 14 个麦克风设备",
+      "details": {
+        "devices": [
+          {
+            "index": 0,
+            "name": "Microsoft Sound Mapper - Input",
+            "channels": 2,
+            "sample_rate": 44100.0
+          },
+          {
+            "index": 1,
+            "name": "麦克风 (ToDesk Virtual Audio)",
+            "channels": 2,
+            "sample_rate": 44100.0
+          },
+          {
+            "index": 2,
+            "name": "CABLE Output (VB-Audio Virtual ",
+            "channels": 16,
+            "sample_rate": 44100.0
+          },
+          {
+            "index": 8,
+            "name": "主声音捕获驱动程序",
+            "channels": 2,
+            "sample_rate": 44100.0
+          },
+          {
+            "index": 9,
+            "name": "麦克风 (ToDesk Virtual Audio)",
+            "channels": 2,
+            "sample_rate": 44100.0
+          },
+          {
+            "index": 10,
+            "name": "CABLE Output (VB-Audio Virtual Cable)",
+            "channels": 16,
+            "sample_rate": 44100.0
+          },
+          {
+            "index": 20,
+            "name": "麦克风 (ToDesk Virtual Audio)",
+            "channels": 2,
+            "sample_rate": 44100.0
+          },
+          {
+            "index": 21,
+            "name": "CABLE Output (VB-Audio Virtual Cable)",
+            "channels": 2,
+            "sample_rate": 48000.0
+          },
+          {
+            "index": 22,
+            "name": "线路输入 (Realtek HD Audio Line input)",
+            "channels": 2,
+            "sample_rate": 44100.0
+          },
+          {
+            "index": 23,
+            "name": "麦克风 (Realtek HD Audio Mic input)",
+            "channels": 2,
+            "sample_rate": 44100.0
+          },
+          {
+            "index": 24,
+            "name": "立体声混音 (Realtek HD Audio Stereo input)",
+            "channels": 2,
+            "sample_rate": 48000.0
+          },
+          {
+            "index": 26,
+            "name": "CABLE Output (VB-Audio Point)",
+            "channels": 16,
+            "sample_rate": 44100.0
+          },
+          {
+            "index": 28,
+            "name": "Input (VB-Audio Point)",
+            "channels": 16,
+            "sample_rate": 44100.0
+          },
+          {
+            "index": 29,
+            "name": "麦克风 ()",
+            "channels": 2,
+            "sample_rate": 44100.0
+          }
+        ]
+      },
+      "timestamp": "2026-02-01T13:36:49.751027"
+    },
+    {
+      "test_name": "TC-AC-002: 系统音频设备枚举",
+      "passed": true,
+      "message": "找到 17 个音频输出设备",
+      "details": {
+        "devices": [
+          {
+            "index": 3,
+            "name": "Microsoft Sound Mapper - Output",
+            "channels": 2,
+            "sample_rate": 44100.0
+          },
+          {
+            "index": 4,
+            "name": "扬声器 (Realtek High Definition Au",
+            "channels": 8,
+            "sample_rate": 44100.0
+          },
+          {
+            "index": 5,
+            "name": "扬声器 (ToDesk Virtual Audio)",
+            "channels": 2,
+            "sample_rate": 44100.0
+          },
+          {
+            "index": 6,
+            "name": "CABLE In 16ch (VB-Audio Virtual",
+            "channels": 16,
+            "sample_rate": 44100.0
+          },
+          {
+            "index": 7,
+            "name": "CABLE Input (VB-Audio Virtual C",
+            "channels": 16,
+            "sample_rate": 44100.0
+          },
+          {
+            "index": 11,
+            "name": "主声音驱动程序",
+            "channels": 2,
+            "sample_rate": 44100.0
+          },
+          {
+            "index": 12,
+            "name": "扬声器 (Realtek High Definition Audio)",
+            "channels": 8,
+            "sample_rate": 44100.0
+          },
+          {
+            "index": 13,
+            "name": "扬声器 (ToDesk Virtual Audio)",
+            "channels": 2,
+            "sample_rate": 44100.0
+          },
+          {
+            "index": 14,
+            "name": "CABLE In 16ch (VB-Audio Virtual Cable)",
+            "channels": 16,
+            "sample_rate": 44100.0
+          },
+          {
+            "index": 15,
+            "name": "CABLE Input (VB-Audio Virtual Cable)",
+            "channels": 16,
+            "sample_rate": 44100.0
+          },
+          {
+            "index": 16,
+            "name": "扬声器 (ToDesk Virtual Audio)",
+            "channels": 2,
+            "sample_rate": 44100.0
+          },
+          {
+            "index": 17,
+            "name": "CABLE In 16ch (VB-Audio Virtual Cable)",
+            "channels": 2,
+            "sample_rate": 48000.0
+          },
+          {
+            "index": 18,
+            "name": "CABLE Input (VB-Audio Virtual Cable)",
+            "channels": 2,
+            "sample_rate": 16000.0
+          },
+          {
+            "index": 19,
+            "name": "扬声器 (Realtek High Definition Audio)",
+            "channels": 2,
+            "sample_rate": 48000.0
+          },
+          {
+            "index": 25,
+            "name": "Speakers (Realtek HD Audio output)",
+            "channels": 8,
+            "sample_rate": 44100.0
+          },
+          {
+            "index": 27,
+            "name": "Output (VB-Audio Point)",
+            "channels": 16,
+            "sample_rate": 44100.0
+          },
+          {
+            "index": 30,
+            "name": "Speakers ()",
+            "channels": 2,
+            "sample_rate": 44100.0
+          }
+        ]
+      },
+      "timestamp": "2026-02-01T13:36:49.753584"
+    },
+    {
+      "test_name": "TC-AC-003: 麦克风音频采集",
+      "passed": true,
+      "message": "采集完成，音频长度: 19136 采样点",
+      "details": {
+        "duration": 1.196,
+        "dtype": "float32",
+        "shape": [
+          19136,
+          1
+        ]
+      },
+      "timestamp": "2026-02-01T13:36:51.033769"
+    },
+    {
+      "test_name": "TC-AC-004: 不同采样率采集",
+      "passed": false,
+      "message": "采样率 8000 Hz: 音频长度不符合预期",
+      "details": {},
+      "timestamp": "2026-02-01T13:36:51.492546"
+    },
+    {
+      "test_name": "TC-AC-005: 系统音频Loopback采集",
+      "passed": false,
+      "message": "异常: Error opening InputStream: Invalid number of channels [PaErrorCode -9998]",
+      "details": {},
+      "timestamp": "2026-02-01T13:36:51.494540"
+    },
+    {
+      "test_name": "TC-AC-006: 音频源切换",
+      "passed": false,
+      "message": "异常: Error opening InputStream: Invalid number of channels [PaErrorCode -9998]",
+      "details": {},
+      "timestamp": "2026-02-01T13:36:53.368183"
+    }
+  ]
+}

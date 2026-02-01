@@ -1,0 +1,274 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+#root {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.app-header {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 20px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.app-header h1 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.app-main {
+  flex: 1;
+  padding: 30px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.content-section {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.content-section h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 20px 0;
+}
+
+.app-footer {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 15px 30px;
+  text-align: center;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.app-footer p {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.error-message {
+  background: #fff1f0;
+  border: 1px solid #ffccc7;
+  border-radius: 8px;
+  padding: 15px 20px;
+  color: #ff4d4f;
+  font-size: 14px;
+  margin-top: 20px;
+}
+
+.audio-source-selector {
+  display: flex;
+  gap: 15px;
+}
+
+.audio-source-selector .ant-radio-group {
+  width: 100%;
+}
+
+.audio-source-selector .ant-radio-button-wrapper {
+  flex: 1;
+  text-align: center;
+}
+
+.text-display {
+  background: #f5f5f5;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  padding: 20px;
+  min-height: 300px;
+  max-height: 400px;
+  overflow-y: auto;
+  font-size: 16px;
+  line-height: 1.8;
+  color: #333;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.text-display.placeholder {
+  color: #999;
+  font-style: italic;
+}
+
+.text-display.recording {
+  border-color: #52c41a;
+  box-shadow: 0 0 0 2px rgba(82, 196, 26, 0.2);
+}
+
+.control-buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+
+.control-buttons .ant-btn {
+  min-width: 120px;
+  height: 40px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.control-buttons .ant-btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+}
+
+.control-buttons .ant-btn-primary:hover {
+  background: linear-gradient(135deg, #5568d3 0%, #653a91 100%);
+  border: none;
+}
+
+.control-buttons .ant-btn-danger {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
+  border: none;
+}
+
+.control-buttons .ant-btn-danger:hover {
+  background: linear-gradient(135deg, #ee5a5a 0%, #dd4949 100%);
+  border: none;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.status-indicator .status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.status-indicator .status-dot.idle {
+  background: #d9d9d9;
+  animation: none;
+}
+
+.status-indicator .status-dot.connecting {
+  background: #faad14;
+  animation: pulse 1s infinite;
+}
+
+.status-indicator .status-dot.recognizing {
+  background: #52c41a;
+  animation: pulse 1s infinite;
+}
+
+.status-indicator .status-dot.error {
+  background: #ff4d4f;
+  animation: none;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.vb-cable-notice {
+  background: #fffbe6;
+  border: 1px solid #ffe58f;
+  border-radius: 8px;
+  padding: 15px 20px;
+  margin-top: 15px;
+}
+
+.vb-cable-notice .notice-title {
+  font-weight: 600;
+  color: #faad14;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vb-cable-notice .notice-content {
+  color: #666;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.vb-cable-notice .notice-content a {
+  color: #1890ff;
+  text-decoration: none;
+}
+
+.vb-cable-notice .notice-content a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    padding: 15px 20px;
+  }
+
+  .app-header h1 {
+    font-size: 20px;
+  }
+
+  .app-main {
+    padding: 20px;
+  }
+
+  .content-section {
+    padding: 20px;
+  }
+
+  .control-buttons {
+    flex-direction: column;
+  }
+
+  .control-buttons .ant-btn {
+    width: 100%;
+  }
+}

@@ -1,0 +1,299 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
+.app-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.app-header h1 {
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.app-main {
+  flex: 1;
+  padding: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.content-section {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.content-section h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 16px;
+}
+
+.audio-source-selector {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.audio-source-option {
+  display: flex;
+  align-items: center;
+  padding: 20px;
+  border: 2px solid #e8e8e8;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.audio-source-option:hover {
+  border-color: #667eea;
+  background: #f8f9ff;
+}
+
+.audio-source-option.active {
+  border-color: #667eea;
+  background: #f0f2ff;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+.audio-source-option .icon {
+  font-size: 48px;
+  margin-right: 16px;
+}
+
+.audio-source-option .info h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.audio-source-option .info p {
+  font-size: 14px;
+  color: #666;
+}
+
+.text-display {
+  min-height: 300px;
+  padding: 20px;
+  border: 2px solid #e8e8e8;
+  border-radius: 8px;
+  font-size: 16px;
+  line-height: 1.8;
+  color: #333;
+  background: #fafafa;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-y: auto;
+  max-height: 500px;
+}
+
+.text-display.placeholder {
+  color: #999;
+  font-style: italic;
+}
+
+.text-display.recording {
+  border-color: #667eea;
+  background: #f8f9ff;
+}
+
+.controls {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 32px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: white;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.status .indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff;
+  animation: pulse 1.5s infinite;
+}
+
+.status.idle .indicator {
+  background: #999;
+  animation: none;
+}
+
+.status.connecting .indicator {
+  background: #faad14;
+}
+
+.status.recording .indicator {
+  background: #52c41a;
+}
+
+.status.error .indicator {
+  background: #f5222d;
+  animation: none;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.vbcable-notice {
+  background: #fff7e6;
+  border: 1px solid #ffd591;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.vbcable-notice h4 {
+  color: #fa8c16;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.vbcable-notice p {
+  color: #8c6e1f;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.vbcable-notice a {
+  color: #1890ff;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.vbcable-notice a:hover {
+  text-decoration: underline;
+}
+
+.error-message {
+  background: #fff1f0;
+  border: 1px solid #ffccc7;
+  border-radius: 8px;
+  padding: 16px;
+  color: #f5222d;
+  font-size: 14px;
+  margin-top: 16px;
+}
+
+.app-footer {
+  background: #333;
+  color: white;
+  padding: 20px;
+  text-align: center;
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    padding: 16px 20px;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .app-header h1 {
+    font-size: 22px;
+  }
+
+  .app-main {
+    padding: 20px;
+  }
+
+  .controls {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .audio-source-selector {
+    grid-template-columns: 1fr;
+  }
+}

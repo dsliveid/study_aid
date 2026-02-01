@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>实时语音识别系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            max-width: 1400px;
+            height: 90vh;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .left-panel {
+            width: 400px;
+            background: #f8f9fa;
+            padding: 30px;
+            border-right: 1px solid #e0e0e0;
+            overflow-y: auto;
+        }
+
+        .right-panel {
+            flex: 1;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 25px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        select, input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-stop:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .btn-clear {
+            background: #e0e0e0;
+            color: #666;
+        }
+
+        .btn-clear:hover {
+            background: #d0d0d0;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ccc;
+            margin-right: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.active {
+            background: #4caf50;
+        }
+
+        .status-dot.inactive {
+            background: #f44336;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .status-text {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .result-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .result-tabs {
+            display: flex;
+            gap: 10px;
+        }
+
+        .tab {
+            padding: 8px 20px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .result-content {
+            flex: 1;
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+        }
+
+        .result-item {
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .result-text {
+            font-size: 16px;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .result-time {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .info-bar {
+            display: flex;
+            gap: 20px;
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .info-item {
+            flex: 1;
+            text-align: center;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .toggle-label {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .toggle-input {
+            width: 50px;
+            height: 26px;
+            appearance: none;
+            background: #ddd;
+            border-radius: 13px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .toggle-input::after {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s;
+        }
+
+        .toggle-input:checked {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .toggle-input:checked::after {
+            left: 26px;
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .volume-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 6px;
+            background: #ddd;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .volume-value {
+            font-size: 14px;
+            color: #666;
+            min-width: 40px;
+            text-align: right;
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-export {
+            flex: 1;
+            padding: 10px;
+            background: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-export:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .btn-export.secondary {
+            background: #2196f3;
+        }
+
+        .btn-export.secondary:hover {
+            background: #1976d2;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                flex-direction: column;
+                height: auto;
+            }
+
+            .left-panel {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid #e0e0e0;
+            }
+
+            .right-panel {
+                height: 600px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 左侧控制面板 -->
+        <div class="left-panel">
+            <div class="panel-title">控制面板</div>
+
+            <!-- 音频源选择 -->
+            <div class="section">
+                <div class="section-title">音频源</div>
+                <div class="form-group">
+                    <label>音频源类型</label>
+                    <select id="audioSource">
+                        <option value="microphone">麦克风</option>
+                        <option value="system_audio">系统音频</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>设备</label>
+                    <select id="device">
+                        <option value="0">默认麦克风</option>
+                        <option value="1">麦克风 (Realtek)</option>
+                        <option value="2">USB 麦克风</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 识别设置 -->
+            <div class="section">
+                <div class="section-title">识别设置</div>
+                <div class="form-group">
+                    <label>识别语言</label>
+                    <select id="language">
+                        <option value="zh">中文</option>
+                        <option value="en">English</option>
+                        <option value="auto">自动检测</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>模型大小</label>
+                    <select id="modelSize">
+                        <option value="tiny">Tiny (最快)</option>
+                        <option value="base" selected>Base (推荐)</option>
+                        <option value="small">Small (更准确)</option>
+                        <option value="medium">Medium (高准确率)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 高级设置 -->
+            <div class="section">
+                <div class="section-title">高级设置</div>
+                <div class="toggle-switch">
+                    <span class="toggle-label">启用VAD</span>
+                    <input type="checkbox" class="toggle-input" id="vadEnabled" checked>
+                </div>
+                <div class="toggle-switch">
+                    <span class="toggle-label">实时显示</span>
+                    <input type="checkbox" class="toggle-input" id="realtimeDisplay" checked>
+                </div>
+                <div class="toggle-switch">
+                    <span class="toggle-label">保存历史记录</span>
+                    <input type="checkbox" class="toggle-input" id="saveHistory" checked>
+                </div>
+            </div>
+
+            <!-- 音量控制 -->
+            <div class="section">
+                <div class="section-title">音量控制</div>
+                <div class="volume-control">
+                    <span style="font-size: 20px;">🔈</span>
+                    <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="80">
+                    <span class="volume-value" id="volumeValue">80%</span>
+                </div>
+            </div>
+
+            <!-- 控制按钮 -->
+            <div class="button-group">
+                <button class="btn-start" id="startBtn">开始识别</button>
+                <button class="btn-stop" id="stopBtn" disabled>停止识别</button>
+            </div>
+
+            <!-- 状态指示 -->
+            <div class="status-indicator">
+                <div class="status-dot inactive" id="statusDot"></div>
+                <span class="status-text" id="statusText">未开始</span>
+            </div>
+        </div>
+
+        <!-- 右侧结果显示 -->
+        <div class="right-panel">
+            <div class="panel-title">识别结果</div>
+
+            <!-- 信息栏 -->
+            <div class="info-bar">
+                <div class="info-item">
+                    <div class="info-label">识别时长</div>
+                    <div class="info-value" id="duration">00:00</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">识别字数</div>
+                    <div class="info-value" id="wordCount">0</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">识别次数</div>
+                    <div class="info-value" id="recognizeCount">0</div>
+                </div>
+            </div>
+
+            <!-- 结果标签 -->
+            <div class="result-header">
+                <div class="result-tabs">
+                    <button class="tab active" id="tabRealtime">实时结果</button>
+                    <button class="tab" id="tabHistory">历史记录</button>
+                </div>
+                <div class="export-buttons">
+                    <button class="btn-export" id="exportTxt">导出TXT</button>
+                    <button class="btn-export secondary" id="clearBtn">清空</button>
+                </div>
+            </div>
+
+            <!-- 结果内容 -->
+            <div class="result-content" id="resultContent">
+                <div class="empty-state">
+                    <div class="empty-state-icon">🎤</div>
+                    <div>点击"开始识别"按钮开始语音识别</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 状态管理
+        const state = {
+            isRecognizing: false,
+            duration: 0,
+            wordCount: 0,
+            recognizeCount: 0,
+            results: [],
+            history: []
+        };
+
+        // DOM元素
+        const elements = {
+            audioSource: document.getElementById('audioSource'),
+            device: document.getElementById('device'),
+            language: document.getElementById('language'),
+            modelSize: document.getElementById('modelSize'),
+            vadEnabled: document.getElementById('vadEnabled'),
+            realtimeDisplay: document.getElementById('realtimeDisplay'),
+            saveHistory: document.getElementById('saveHistory'),
+            volumeSlider: document.getElementById('volumeSlider'),
+            volumeValue: document.getElementById('volumeValue'),
+            startBtn: document.getElementById('startBtn'),
+            stopBtn: document.getElementById('stopBtn'),
+            statusDot: document.getElementById('statusDot'),
+            statusText: document.getElementById('statusText'),
+            duration: document.getElementById('duration'),
+            wordCount: document.getElementById('wordCount'),
+            recognizeCount: document.getElementById('recognizeCount'),
+            tabRealtime: document.getElementById('tabRealtime'),
+            tabHistory: document.getElementById('tabHistory'),
+            resultContent: document.getElementById('resultContent'),
+            exportTxt: document.getElementById('exportTxt'),
+            clearBtn: document.getElementById('clearBtn')
+        };
+
+        // 音量控制
+        elements.volumeSlider.addEventListener('input', (e) => {
+            elements.volumeValue.textContent = e.target.value + '%';
+        });
+
+        // 音频源切换
+        elements.audioSource.addEventListener('change', (e) => {
+            updateDeviceOptions(e.target.value);
+        });
+
+        function updateDeviceOptions(sourceType) {
+            const deviceOptions = {
+                microphone: [
+                    { value: '0', text: '默认麦克风' },
+                    { value: '1', text: '麦克风 (Realtek)' },
+                    { value: '2', text: 'USB 麦克风' }
+                ],
+                system_audio: [
+                    { value: '0', text: '默认扬声器' },
+                    { value: '1', text: '扬声器 (Realtek)' },
+                    { value: '2', text: 'HDMI 音频输出' }
+                ]
+            };
+
+            elements.device.innerHTML = '';
+            deviceOptions[sourceType].forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = option.value;
+                opt.textContent = option.text;
+                elements.device.appendChild(opt);
+            });
+        }
+
+        // 开始识别
+        elements.startBtn.addEventListener('click', () => {
+            if (state.isRecognizing) return;
+
+            state.isRecognizing = true;
+            state.duration = 0;
+            state.wordCount = 0;
+            state.recognizeCount = 0;
+            state.results = [];
+
+            updateUI();
+            startTimer();
+            simulateRecognition();
+        });
+
+        // 停止识别
+        elements.stopBtn.addEventListener('click', () => {
+            if (!state.isRecognizing) return;
+
+            state.isRecognizing = false;
+            stopTimer();
+            updateUI();
+        });
+
+        // 清空结果
+        elements.clearBtn.addEventListener('click', () => {
+            state.results = [];
+            state.history = [];
+            state.wordCount = 0;
+            state.recognizeCount = 0;
+            updateResultContent();
+            updateInfoBar();
+        });
+
+        // 导出TXT
+        elements.exportTxt.addEventListener('click', () => {
+            const text = state.results.map(r => r.text).join('\n');
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `语音识别结果_${new Date().toLocaleString().replace(/[/:]/g, '-')}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        // 标签切换
+        elements.tabRealtime.addEventListener('click', () => {
+            elements.tabRealtime.classList.add('active');
+            elements.tabHistory.classList.remove('active');
+            updateResultContent();
+        });
+
+        elements.tabHistory.addEventListener('click', () => {
+            elements.tabHistory.classList.add('active');
+            elements.tabRealtime.classList.remove('active');
+            updateResultContent();
+        });
+
+        // 更新UI
+        function updateUI() {
+            elements.startBtn.disabled = state.isRecognizing;
+            elements.stopBtn.disabled = !state.isRecognizing;
+
+            if (state.isRecognizing) {
+                elements.statusDot.classList.remove('inactive');
+                elements.statusDot.classList.add('active');
+                elements.statusText.textContent = '正在识别...';
+            } else {
+                elements.statusDot.classList.remove('active');
+                elements.statusDot.classList.add('inactive');
+                elements.statusText.textContent = '已停止';
+            }
+        }
+
+        // 计时器
+        let timerInterval = null;
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                state.duration++;
+                updateInfoBar();
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        // 更新信息栏
+        function updateInfoBar() {
+            const minutes = Math.floor(state.duration / 60).toString().padStart(2, '0');
+            const seconds = (state.duration % 60).toString().padStart(2, '0');
+            elements.duration.textContent = `${minutes}:${seconds}`;
+            elements.wordCount.textContent = state.wordCount;
+            elements.recognizeCount.textContent = state.recognizeCount;
+        }
+
+        // 模拟识别（演示用）
+        function simulateRecognition() {
+            const sampleTexts = [
+                '今天天气很好',
+                '这是一个实时语音识别系统',
+                'Python是一种流行的编程语言',
+                '人工智能正在改变我们的生活',
+                '语音识别技术越来越成熟',
+                '欢迎使用这个系统',
+                '这是一个测试文本',
+                '识别准确率很高'
+            ];
+
+            const simulateInterval = setInterval(() => {
+                if (!state.isRecognizing) {
+                    clearInterval(simulateInterval);
+                    return;
+                }
+
+                const randomText = sampleTexts[Math.floor(Math.random() * sampleTexts.length)];
+                const result = {
+                    text: randomText,
+                    time: new Date().toLocaleTimeString()
+                };
+
+                state.results.push(result);
+                if (elements.saveHistory.checked) {
+                    state.history.push(result);
+                }
+
+                state.wordCount += randomText.length;
+                state.recognizeCount++;
+                updateResultContent();
+                updateInfoBar();
+            }, 2000);
+        }
+
+        // 更新结果内容
+        function updateResultContent() {
+            const isRealtime = elements.tabRealtime.classList.contains('active');
+            const currentResults = isRealtime ? state.results : state.history;
+
+            if (currentResults.length === 0) {
+                elements.resultContent.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🎤</div>
+                        <div>${isRealtime ? '点击"开始识别"按钮开始语音识别' : '暂无历史记录'}</div>
+                    </div>
+                `;
+                return;
+            }
+
+            elements.resultContent.innerHTML = currentResults.map(result => `
+                <div class="result-item">
+                    <div class="result-text">${result.text}</div>
+                    <div class="result-time">${result.time}</div>
+                </div>
+            `).join('');
+
+            // 滚动到底部
+            elements.resultContent.scrollTop = elements.resultContent.scrollHeight;
+        }
+
+        // 初始化
+        updateUI();
+        updateResultContent();
+    </script>
+</body>
+</html>
