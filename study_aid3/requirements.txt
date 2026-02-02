@@ -1,0 +1,64 @@
+# Study Aid 项目 Python 依赖列表
+# 生成时间: 2024
+# 
+# 安装命令: pip install -r requirements.txt
+# 
+# 注意: openai-whisper 会自动安装 torch 等依赖
+
+# =====================
+# 核心依赖
+# =====================
+
+# 音频采集
+sounddevice>=0.4.6          # 跨平台音频录制和播放库
+pyaudiowpatch>=0.1.1        # Windows WASAPI 环路捕获支持
+
+# 音频处理与科学计算
+numpy>=1.24.0               # 数值计算和数组操作
+scipy>=1.10.0               # 科学计算，包括信号处理模块
+
+# 语音识别
+openai-whisper>=20231117    # OpenAI Whisper 语音识别模型
+faster-whisper>=1.2.1       # Faster Whisper 语音识别模型
+
+# =====================
+# 可选依赖
+# =====================
+
+# 如果需要处理更多音频格式，可以安装以下库：
+# mutagen>=1.47.0            # 音频元数据读取
+# pydub>=0.25.1              # 音频格式转换和处理
+
+# =====================
+# 依赖说明
+# =====================
+# 
+# sounddevice: 用于麦克风音频采集和系统音频播放
+#   - Windows/Linux/macOS 全平台支持
+#   - 提供简单的录音和播放API
+# 
+# pyaudiowpatch: Windows 专用音频环路捕获
+#   - 使用 WASAPI 接口
+#   - 需要 Windows Vista 或更高版本
+#   - 用于捕获系统正在播放的音频
+# 
+# numpy: Python 科学计算的基础库
+#   - 提供高效的数组对象
+#   - 用于音频数据的数值处理
+# 
+# scipy: 科学计算工具箱
+#   - signal 模块: 滤波器设计、信号处理
+#   - io 模块: WAV文件读写
+#   - 用于音频预处理和特征提取
+# 
+# openai-whisper: 语音识别模型
+#   - 支持多种模型大小: tiny/base/small/medium/large
+#   - 自动下载预训练模型
+#   - 内部依赖 torch 和 ffmpeg-python
+#   - 支持中英文等多种语言
+#
+# 系统要求:
+#   - Python 3.8+
+#   - Windows/Linux/macOS
+#   - 4GB+ RAM (推荐)
+#   - 磁盘空间: 1GB+ (用于模型文件)
