@@ -899,6 +899,160 @@ class AudioProcessingTest(unittest.TestCase):
         print("✅ 高通滤波器测试通过")
         print("✅ 通过: TC-AP-013: 高通滤波器")
 
+    def test_vad(self):
+        """
+        TC-AP-014: VAD(Voice Activity Detection)静音检测测试
+        
+        测试用例编号: TC-AP-014
+        测试目的: 验证VAD算法能否准确区分语音和静音片段
+        
+        本测试使用webrtcvad库和真实的语音文件(hello.wav)进行验证。
+        
+        测试原理:
+            1. 加载包含语音("hello")和静音的WAV文件。
+            2. 将音频分割成30ms的帧。
+            3. 对每一帧应用VAD算法。
+            4. 根据文件名中包含的语音起止时间，验证VAD的输出。
+        """
+        print("\n============================================================")
+        print("TC-AP-014: 测试VAD静音检测")
+        print("============================================================")
+        
+        import webrtcvad
+        import wave
+
+        sample_rate = 16000
+        frame_duration_ms = 30
+        frame_size = int(sample_rate * frame_duration_ms / 1000)
+        
+        # 加载真实的WAV文件
+        with wave.open("tests/hello.wav", "rb") as wf:
+            audio_bytes = wf.readframes(wf.getnframes())
+            audio_int16 = np.frombuffer(audio_bytes, dtype=np.int16)
+
+        vad = webrtcvad.Vad(1)
+        
+        num_frames = len(audio_int16) // frame_size
+        
+        # "hello" 发音大约在 0s 到 0.75s 之间
+        speech_end_frame = int(0.75 * sample_rate / frame_size)
+        hangover_frames_allowance = 5 # 允许5帧的挂起时间
+
+        detected_speech_frames = 0
+        detected_silence_frames_in_silence_part = 0
+        total_silence_frames = 0
+
+        for i in range(num_frames):
+            start = i * frame_size
+            end = start + frame_size
+            frame = audio_int16[start:end].tobytes()
+            
+            if len(frame) < frame_size * 2: continue
+
+            is_speech = vad.is_speech(frame, sample_rate)
+            
+            if i < speech_end_frame:
+                if is_speech:
+                    detected_speech_frames += 1
+            # 容忍VAD的挂起效应
+            elif i < speech_end_frame + hangover_frames_allowance:
+                pass
+            else:
+                total_silence_frames += 1
+                if not is_speech:
+                    detected_silence_frames_in_silence_part += 1
+        
+        # 验证在语音段中，至少有50%的帧被检测为语音
+        self.assertGreater(detected_speech_frames / speech_end_frame, 0.5, "Less than 50% of speech frames were detected.")
+        # 验证在静音段中，至少有80%的帧被检测为静音
+        self.assertGreater(detected_silence_frames_in_silence_part / total_silence_frames, 0.8, "Less than 80% of silence frames were detected correctly.")
+
+        print("✅ VAD静音检测测试通过")
+        print("✅ 通过: TC-AP-014: VAD静音检测")
+
+    def test_noise_reduction(self):
+        """
+        TC-AP-015: 降噪功能测试 (使用频谱减法)
+        
+        测试用例编号: TC-AP-015
+        测试目的: 验证自定义的频谱减法降噪算法能否有效提升信噪比(SNR)
+        
+        本测试放弃使用外部库，直接实现一个基础的频谱减法算法。
+        
+        测试原理:
+            1. 加载真实语音文件(hello.wav)并添加高斯白噪声。
+            2. 计算原始信噪比(SNR)。
+            3. 实现频谱减法:
+               a. 对噪声部分进行STFT，估计噪声谱。
+               b. 对整个信号进行STFT。
+               c. 从信号谱中减去噪声谱。
+               d. 对处理后的谱进行ISTFT，重构降噪后的信号。
+            4. 计算降噪后的信噪比。
+            5. 验证降噪后的SNR高于原始SNR。
+        """
+        print("\n============================================================")
+        print("TC-AP-015: 测试降噪功能 (频谱减法)")
+        print("============================================================")
+        
+        import wave
+        from scipy.signal import stft, istft
+
+        # 1. 加载信号并添加噪声
+        sample_rate = 16000
+        with wave.open("tests/hello.wav", "rb") as wf:
+            audio_bytes = wf.readframes(wf.getnframes())
+            clean_signal = np.frombuffer(audio_bytes, dtype=np.int16).astype(np.float32) / 32767.0
+
+        noise_duration = 0.2
+        noise = np.random.randn(len(clean_signal)) * 0.05
+        # 在信号开头加入纯噪声段
+        noisy_signal = np.concatenate([noise[:int(noise_duration*sample_rate)], clean_signal[int(noise_duration*sample_rate):] + noise[int(noise_duration*sample_rate):]])
+        
+        # 2. 计算原始SNR
+        power_clean = np.mean(clean_signal[int(noise_duration*sample_rate):]**2)
+        power_noise = np.mean(noise[int(noise_duration*sample_rate):]**2)
+        original_snr = 10 * np.log10(power_clean / power_noise)
+
+        # 3. 实现频谱减法
+        nperseg = 256
+        
+        # a. 估计噪声谱
+        noise_part = noisy_signal[:int(noise_duration*sample_rate)]
+        _, _, Zxx_noise = stft(noise_part, fs=sample_rate, nperseg=nperseg)
+        mean_noise_psd = np.mean(np.abs(Zxx_noise)**2, axis=1)
+        
+        # b. 对整个信号进行STFT
+        _, t, Zxx_noisy = stft(noisy_signal, fs=sample_rate, nperseg=nperseg)
+        
+        # c. 减去噪声谱 (幅度谱)
+        mag_noisy = np.abs(Zxx_noisy)
+        phase_noisy = np.angle(Zxx_noisy)
+        
+        mag_denoised = np.sqrt(np.maximum(mag_noisy**2 - mean_noise_psd[:, np.newaxis], 0))
+        
+        # d. 重构信号
+        Zxx_denoised = mag_denoised * np.exp(1j * phase_noisy)
+        _, denoised_signal = istft(Zxx_denoised, fs=sample_rate, nperseg=nperseg)
+        denoised_signal = denoised_signal[:len(clean_signal)] # 调整长度
+
+        # 4. 计算降噪后的SNR
+        denoised_speech_part = denoised_signal[int(noise_duration*sample_rate):]
+        clean_speech_part = clean_signal[int(noise_duration*sample_rate):]
+        residual_noise = denoised_speech_part - clean_speech_part
+        power_residual_noise = np.mean(residual_noise**2)
+        
+        if power_residual_noise < 1e-10: power_residual_noise = 1e-10
+        reduced_snr = 10 * np.log10(power_clean / power_residual_noise)
+        
+        print(f"原始SNR: {original_snr:.2f} dB")
+        print(f"降噪后SNR: {reduced_snr:.2f} dB")
+        
+        # 5. 验证SNR提升
+        self.assertGreater(reduced_snr, original_snr, "降噪后SNR应高于原始SNR")
+        
+        print("✅ 降噪功能测试通过")
+        print("✅ 通过: TC-AP-015: 降噪功能测试")
+
 
 if __name__ == '__main__':
     unittest.main()

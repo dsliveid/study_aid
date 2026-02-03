@@ -1,4 +1,4 @@
-# Study Aid 项目 Python 依赖列表
+﻿# Study Aid 项目 Python 依赖列表
 # 生成时间: 2024
 # 
 # 安装命令: pip install -r requirements.txt
@@ -16,10 +16,19 @@ pyaudiowpatch>=0.1.1        # Windows WASAPI 环路捕获支持
 # 音频处理与科学计算
 numpy>=1.24.0               # 数值计算和数组操作
 scipy>=1.10.0               # 科学计算，包括信号处理模块
+webrtcvad-wheels>=2.0.10    # VAD 静音检测
+noisereduce==2.0.1          # 基于频谱减法的音频降噪
 
 # 语音识别
-openai-whisper>=20231117    # OpenAI Whisper 语音识别模型
-faster-whisper>=1.2.1       # Faster Whisper 语音识别模型
+# 本项目最终采用 whisper.cpp (C++实现)，通过子进程调用其可执行文件，因此无直接的Python库依赖。
+# 以下列出其他曾考虑过的方案以供参考。
+
+# 方案一：OpenAI官方实现 (依赖PyTorch)
+# openai-whisper
+
+# 方案二：CTranslate2优化版 (性能更好)
+# faster-whisper
+
 
 # =====================
 # 可选依赖
@@ -27,7 +36,13 @@ faster-whisper>=1.2.1       # Faster Whisper 语音识别模型
 
 # 如果需要处理更多音频格式，可以安装以下库：
 # mutagen>=1.47.0            # 音频元数据读取
-# pydub>=0.25.1              # 音频格式转换和处理
+
+# =====================
+# 测试依赖 (用于运行 `tests` 目录下的测试)
+# =====================
+gTTS>=2.5.4                # 用于生成测试音频
+pydub>=0.25.1              # 用于测试音频格式转换
+psutil>=7.2.2              # 用于性能测试中的资源监控
 
 # =====================
 # 依赖说明
@@ -62,3 +77,4 @@ faster-whisper>=1.2.1       # Faster Whisper 语音识别模型
 #   - Windows/Linux/macOS
 #   - 4GB+ RAM (推荐)
 #   - 磁盘空间: 1GB+ (用于模型文件)
+
