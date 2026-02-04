@@ -1,4 +1,4 @@
-﻿# Study Aid 项目 Python 依赖列表
+# Study Aid 项目 Python 依赖列表
 # 生成时间: 2024
 # 
 # 安装命令: pip install -r requirements.txt
@@ -77,4 +77,11 @@ psutil>=7.2.2              # 用于性能测试中的资源监控
 #   - Windows/Linux/macOS
 #   - 4GB+ RAM (推荐)
 #   - 磁盘空间: 1GB+ (用于模型文件)
+
+soundfile
+pyaudiowpatch
+PyQt5
+librosa
+numpy
+opencc-python-reimplemented
 
