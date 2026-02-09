@@ -2,3 +2,5 @@ study_aid2/voice-recognition/backend/node_modules/
 study_aid2/voice-recognition/frontend/node_modules/
 study_aid3/venv/
 study_aid3/tests/__pycache__
+study_aid3/speech_recognition/__pycache__
+study_aid3/temp_files

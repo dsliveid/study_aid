@@ -122,16 +122,35 @@ class AudioCapture:
             channels = device_info['maxInputChannels']
             original_sample_rate = int(device_info['defaultSampleRate'])
 
+            # 尝试使用 paFloat32，如果不支持则回退到 paInt16
+            audio_format = pyaudio.paFloat32
+            try:
+                self.pyaudio_instance.is_format_supported(
+                    rate=original_sample_rate,
+                    input_device=device_index,
+                    input_channels=channels,
+                    input_format=audio_format
+                )
+                print("使用 paFloat32 格式进行捕获。")
+            except ValueError:
+                print("paFloat32 不支持，回退到 paInt16。")
+                audio_format = pyaudio.paInt16
+
+
             print(f"开始使用设备进行loopback捕获: {device_info['name']}")
 
             def callback(in_data, frame_count, time_info, status):
                 if status:
                     print(f"系统音频捕获状态: {status}")
                 try:
-                    audio_data_int16 = np.frombuffer(in_data, dtype=np.int16)
+                    if audio_format == pyaudio.paFloat32:
+                        audio_data_float = np.frombuffer(in_data, dtype=np.float32)
+                    else: # paInt16
+                        audio_data_int16 = np.frombuffer(in_data, dtype=np.int16)
+                        audio_data_float = audio_data_int16.astype(np.float32) / 32768.0
                     
                     # 1. 将音频数据转换为浮点数 [-1.0, 1.0]
-                    audio_data_float = audio_data_int16.astype(np.float32) / 32768.0
+                    # audio_data_float = audio_data_int16.astype(np.float32) / 32768.0
 
                     # 2. 根据声道数重塑数组
                     num_channels = channels
@@ -175,7 +194,7 @@ class AudioCapture:
                 return (in_data, pyaudio.paContinue)
 
             self.pyaudio_stream = self.pyaudio_instance.open(
-                format=pyaudio.paInt16,
+                format=audio_format,
                 channels=channels,
                 rate=original_sample_rate,
                 input=True,
