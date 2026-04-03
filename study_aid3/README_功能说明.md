@@ -5,9 +5,11 @@
 本项目是一个基于 Python 开发的实时语音识别桌面应用，支持从麦克风或系统音频捕获声音，并使用 Whisper.cpp 引擎进行实时语音识别。项目面向 Windows 平台，提供了现代化的图形用户界面，能够实时将语音转换为文字。
 
 ### 1.1 项目名称
+
 Study Aid - 实时语音识别助手
 
 ### 1.2 核心特点
+
 - 支持麦克风和系统音频双重输入源
 - 基于高效的 Whisper.cpp 引擎，实现流式语音识别
 - 完全离线运行，无需网络连接
@@ -16,6 +18,7 @@ Study Aid - 实时语音识别助手
 - 支持中英混合语音识别
 
 ### 1.3 技术栈
+
 - **编程语言**: Python 3.8+
 - **UI框架**: PyQt5
 - **音频采集**: sounddevice, pyaudiowpatch
@@ -28,13 +31,16 @@ Study Aid - 实时语音识别助手
 ### 2.1 音频采集模块
 
 #### 功能描述
+
 负责从不同的音频源捕获实时音频数据。
 
 #### 支持的音频源
+
 - **麦克风音频**: 从麦克风设备实时采集语音输入
 - **系统音频**: 通过 Windows WASAPI Loopback 模式捕获系统正在播放的音频
 
 #### 核心功能
+
 - 设备枚举：自动检测并列出所有可用的音频输入设备
 - 音频流管理：创建和管理音频采集流
 - 实时数据采集：通过回调方式实时获取音频数据
@@ -43,9 +49,11 @@ Study Aid - 实时语音识别助手
 - 重采样：使用 librosa 进行高质量音频重采样
 
 #### 主要文件
+
 - `speech_recognition/audio_capture.py`: 音频采集核心实现
 
 #### 关键类和方法
+
 - `AudioCapture.list_microphone_devices()`: 列出麦克风设备
 - `AudioCapture.list_system_audio_devices()`: 列出系统音频设备
 - `AudioCapture.start_microphone_capture()`: 开始麦克风采集
@@ -55,12 +63,15 @@ Study Aid - 实时语音识别助手
 ### 2.2 语音识别模块
 
 #### 功能描述
+
 使用 Whisper.cpp 引擎将音频数据转换为文本文本。
 
 #### 支持的识别模式
+
 项目提供两种语音识别模式供选择。
 
 **流式识别模式（推荐）**
+
 - 使用 `whisper_cpp/stream/stream.exe` 实现
 - 实时处理音频流，延迟更低
 - 支持中英混合识别
@@ -68,6 +79,7 @@ Study Aid - 实时语音识别助手
 - 适用于实时应用场景
 
 **非流式识别模式**
+
 - 使用 `whisper_cpp/main.exe` 实现
 - 音频缓冲到固定时长（5秒）后进行识别
 - 支持中文繁简转换
@@ -75,6 +87,7 @@ Study Aid - 实时语音识别助手
 - 适用于需要更高准确率的场景
 
 #### 核心功能
+
 - 流式音频处理：实时接收和识别音频数据
 - 多线程处理：音频写入和结果读取分离，提高效率
 - 中英混合识别：自动识别中文和英文混合语音
@@ -82,10 +95,12 @@ Study Aid - 实时语音识别助手
 - 繁简转换：将繁体中文转换为简体中文（非流式模式）
 
 #### 主要文件
+
 - `speech_recognition/speech_recognizer.py`: 流式识别实现
 - `speech_recognition/speech_recognizer_non_stream.py`: 非流式识别实现
 
 #### 关键类和方法
+
 - `SpeechRecognizer.start()`: 启动识别引擎
 - `SpeechRecognizer.stop()`: 停止识别引擎
 - `SpeechRecognizer.get_result()`: 获取识别结果
@@ -96,9 +111,11 @@ Study Aid - 实时语音识别助手
 ### 2.3 图形用户界面模块
 
 #### 功能描述
+
 提供用户友好的图形界面，控制音频采集和语音识别流程。
 
 #### 界面布局
+
 1. **控制面板**
    - 音频源选择下拉框（麦克风/系统音频）
    - 设备选择下拉框
@@ -111,6 +128,7 @@ Study Aid - 实时语音识别助手
    - 自动滚动到最新结果
 
 #### 核心功能
+
 - 设备选择切换：动态加载可用的音频设备
 - 识别控制：一键开始/停止语音识别
 - 实时结果显示：实时更新识别文本
@@ -119,11 +137,14 @@ Study Aid - 实时语音识别助手
 - 线程管理：确保 UI 响应流畅，不因识别任务阻塞
 
 #### UI 实现
+
 项目提供两种 UI 实现：
+
 - `speech_recognition/ui/main_window_stream.py`: 流式识别模式界面（推荐）
 - `speech_recognition/ui/main_window_non_stream.py`: 非流式识别模式界面
 
 #### 关键类和方法
+
 - `MainWindow.__init__()`: 初始化主窗口
 - `MainWindow.setup_ui()`: 设置用户界面布局
 - `MainWindow.load_devices()`: 加载可用的音频设备
@@ -135,15 +156,18 @@ Study Aid - 实时语音识别助手
 ### 2.4 音频处理模块
 
 #### 功能描述
+
 对采集的音频数据进行预处理，优化识别效果。
 
 #### 主要处理步骤
+
 1. **格式转换**: int16 转 float32
 2. **声道转换**: 多声道转单声道（取平均值）
 3. **重采样**: 将原始采样率转换为目标采样率（16000Hz）
 4. **音量归一化**: 调整音频幅度到合理范围
 
 #### 使用的库
+
 - librosa: 高质量音频重采样
 - numpy: 数值计算和数组操作
 
@@ -225,21 +249,25 @@ Study Aid - 实时语音识别助手
 ## 4. 使用场景
 
 ### 4.1 会议记录
+
 - 场景：在会议中实时记录发言内容
 - 使用方式：将音频源选择为"麦克风"，放置在会议桌上
 - 优势：实时转录，无需手动记录
 
 ### 4.2 视频字幕生成
+
 - 场景：观看英文视频时生成实时字幕
 - 使用方式：将音频源选择为"系统音频"，播放视频
 - 优势：支持中英混合识别，实时翻译
 
 ### 4.3 音乐听写
+
 - 场景：学习歌曲歌词或外语发音
 - 使用方式：选择"系统音频"或"麦克风"播放音频
 - 优势：准确率高，支持繁简转换
 
 ### 4.4 语音笔记
+
 - 场景：快速记录语音笔记
 - 使用方式：选择"麦克风"，语音输入
 - 优势：解放双手，提高效率
@@ -247,6 +275,7 @@ Study Aid - 实时语音识别助手
 ## 5. 依赖项
 
 ### 5.1 核心依赖
+
 - `PyQt5 >=5.15.0`: 图形用户界面框架
 - `sounddevice >=0.4.6`: 音频采集库
 - `pyaudiowpatch >=0.1.1`: Windows WASAPI 支持（系统音频）
@@ -257,11 +286,13 @@ Study Aid - 实时语音识别助手
 - `opencc-python-reimplemented`: 繁简转换（非流式模式）
 
 ### 5.2 Whisper.cpp 依赖
-- `whisper_cpp/ggml-base.en.bin`: Whisper 基础模型
+
+- `whisper_cpp/ggml-base.bin`: Whisper 基础模型
 - `whisper_cpp/stream/stream.exe`: 流式识别可执行文件
 - `whisper_cpp/main.exe`: 非流式识别可执行文件
 
 ### 5.3 系统要求
+
 - **操作系统**: Windows 10 或更高版本
 - **Python**: 3.8 或更高版本
 - **内存**: 4GB RAM (推荐 8GB+)
@@ -271,10 +302,12 @@ Study Aid - 实时语音识别助手
 ## 6. 安装与运行
 
 ### 6.1 环境准备
+
 1. 安装 Python 3.8+
 2. 克隆或下载项目代码
 
 ### 6.2 依赖安装
+
 ```bash
 # 创建虚拟环境
 python -m venv venv
@@ -287,18 +320,50 @@ pip install -r requirements.txt
 ```
 
 ### 6.3 下载 Whisper 模型
+
 确保 `whisper_cpp` 目录下包含以下文件：
-- `ggml-base.en.bin` 或其他 Whisper 模型文件
+
+- `ggml-base.bin` 或其他 Whisper 模型文件
 - `stream/stream.exe` 或 `main.exe`
+
+#### 步骤一：获取 `whisper.cpp` 的可执行文件
+
+我们最初尝试了 `Const-me/Whisper` 仓库的 `WhisperDesktop.exe`，但它在命令行环境下的输出行为不稳定，不适合自动化调用。
+
+最终，我们选择了 `regstuff/whisper.cpp_windows` 仓库，它提供了为 Windows 预编译的、纯命令行的 `main.exe` 版本。
+
+1.  **下载**: 从 `https://github.com/regstuff/whisper.cpp_windows/releases` 下载 `whisper.cpp_win_x64_v0.0.2.zip` 文件。
+    ```powershell
+    Invoke-WebRequest -Uri "https://github.com/regstuff/whisper.cpp_windows/releases/download/v0.0.2/whisper.cpp_win_x64_v0.0.2.zip" -OutFile "whisper_cpp/whisper.cpp_win_x64_v0.0.2.zip"
+    ```
+2.  **解压**: 将压缩包解压到项目根目录下的 `whisper_cpp` 文件夹中。
+    ```powershell
+    Expand-Archive -Path "whisper_cpp/whisper.cpp_win_x64_v0.0.2.zip" -DestinationPath "whisper_cpp" -Force
+    ```
+
+#### 步骤二：下载 Whisper 模型
+
+`whisper.cpp` 需要使用专门格式化的 `ggml` 模型。
+
+1.  **下载**: 我们从 Hugging Face 的 `ggerganov/whisper.cpp` 仓库下载了 `ggml-base.bin` 模型。
+    - **链接**: `https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin`
+    - **PowerShell 命令**:
+      ```powershell
+      Invoke-WebRequest -Uri "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin" -OutFile "whisper_cpp/ggml-base.bin"
+      ```
+2.  **存放**: 将下载的 `.bin` 文件同样放入 `whisper_cpp` 文件夹。
+3.  **更多模型**: 连接：`https://huggingface.co/ggerganov/whisper.cpp/tree/main`
 
 ### 6.4 运行应用
 
 **流式识别模式（推荐）**
+
 ```bash
 python -m speech_recognition.ui.main_window_stream
 ```
 
 **非流式识别模式**
+
 ```bash
 python -m speech_recognition.ui.main_window_non_stream
 ```
@@ -306,33 +371,39 @@ python -m speech_recognition.ui.main_window_non_stream
 ## 7. 配置说明
 
 ### 7.1 音频配置
+
 - **采样率**: 默认 16000Hz，在 AudioCapture 类中可配置
 - **声道数**: 默认 1（单声道），系统音频会自动转换
 - **块大小**: 音频数据块大小，影响延迟和性能平衡
 
 ### 7.2 识别配置
-- **模型路径**: `whisper_cpp/ggml-base.en.bin`，可在 SpeechRecognizer 初始化时修改
+
+- **模型路径**: `whisper_cpp/ggml-base.bin`，可在 SpeechRecognizer 初始化时修改
 - **线程数**: 默认 4 个线程，可在启动命令中配置
 - **处理步长**: 流式模式默认 500ms
 - **上下文长度**: 流式模式默认 5000ms
 
 ### 7.3 UI 配置
+
 - **保留临时文件**: 通过复选框控制，非流式模式默认不保留
 - **窗口大小**: 800x600，可在代码中调整
 
 ## 8. 性能指标
 
 ### 8.1 响应时间
+
 - 启动时间: < 3 秒（包含模型加载）
 - 音频延迟: < 500ms（流式模式）
 - 识别延迟: 2-5 秒（非流式模式，5秒缓冲）
 
 ### 8.2 资源占用
+
 - **CPU 使用率**: 20-40%（识别过程中）
 - **内存占用**: 500-800MB
 - **磁盘空间**: 约 150MB（模型文件）
 
 ### 8.3 识别准确率
+
 - 中文普通话: >95%
 - 英文: >90%
 - 中英混合: >90%
@@ -340,16 +411,19 @@ python -m speech_recognition.ui.main_window_non_stream
 ## 9. 注意事项
 
 ### 9.1 使用限制
+
 - 当前仅支持 Windows 系统
 - 需要音频设备正常工作
 - 系统音频捕获需要合适的输出设备
 
 ### 9.2 性能优化建议
+
 - 使用流式模式获得更低的延迟
 - 在配置较低的计算机上，可选择更小的模型
 - 关闭其他占用大量CPU的应用程序
 
 ### 9.3 常见问题
+
 - **无法识别系统音频**: 确保系统有音频输出设备，且音量不为零
 - **识别结果为空**: 检查设备是否正常工作，音量是否合适
 - **程序卡顿**: 降低采样率或使用更小的模型
@@ -373,7 +447,7 @@ study_aid3/
 │       ├── __init__.py
 │       └── audio_utils.py       # 音频工具
 ├── whisper_cpp/                 # Whisper 可执行文件和模型
-│   ├── ggml-base.en.bin         # 模型文件
+│   ├── ggml-base.bin         # 模型文件
 │   ├── stream/                  # 流式识别程序
 │   │   └── stream.exe
 │   └── main.exe                 # 非流式识别程序
@@ -399,6 +473,7 @@ study_aid3/
 ## 11. 未来规划
 
 ### 11.1 功能增强
+
 - 支持更多 Whisper 模型大小
 - 添加音频降噪功能
 - 支持识别结果导出（TXT, DOCX）
@@ -406,15 +481,18 @@ study_aid3/
 - 支持热键控制
 
 ### 11.2 性能优化
+
 - GPU 加速支持
 - 更高效的音频缓冲管理
 - 降低内存占用
 
 ### 11.3 平台扩展
+
 - Linux 系统支持
 - macOS 系统支持
 
 ### 11.4 其他改进
+
 - 多语言界面
 - 自定义识别模型
 - 云端识别引擎集成（可选）
@@ -423,11 +501,14 @@ study_aid3/
 ## 12. 技术支持
 
 ### 12.1 文档资源
+
 - 项目根目录下的 `实时语音识别技术文档.md` 包含详细的技术原理和实现细节
 - `docs/` 目录下包含各模块的技术文档
 
 ### 12.2 测试
+
 项目包含完善的测试用例，位于 `tests/` 目录：
+
 - `test_audio_capture.py`: 音频采集测试
 - `test_audio_processing.py`: 音频处理测试
 - `test_integration.py`: 集成测试
@@ -436,8 +517,8 @@ study_aid3/
 
 ## 版本历史
 
-| 版本 | 日期 | 说明 |
-|------|------|------|
+| 版本  | 日期 | 说明                           |
+| ----- | ---- | ------------------------------ |
 | 1.0.0 | 2024 | 初始版本，支持流式和非流式识别 |
 
 ---

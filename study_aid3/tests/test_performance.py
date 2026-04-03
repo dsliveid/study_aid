@@ -5,6 +5,7 @@ import subprocess
 import psutil
 import threading
 
+# 测试识别延迟和资源占用
 class TestPerformance(unittest.TestCase):
     def test_recognition_latency(self):
         """TC-PERF-001: 识别延迟测试"""
@@ -12,7 +13,7 @@ class TestPerformance(unittest.TestCase):
         base_dir = os.path.dirname(os.path.dirname(__file__))
         audio_path = os.path.join(base_dir, "tests", "hello_world.wav")
         exe_path = os.path.join(base_dir, 'whisper_cpp', 'main.exe')
-        model_path = os.path.join(base_dir, 'whisper_cpp', 'ggml-base.en.bin')
+        model_path = os.path.join(base_dir, 'whisper_cpp', 'ggml-base.bin')
 
         self.assertTrue(os.path.exists(audio_path), "基准音频文件 'hello_world.wav' 不存在")
 
@@ -55,7 +56,7 @@ class TestPerformance(unittest.TestCase):
         base_dir = os.path.dirname(os.path.dirname(__file__))
         audio_path = os.path.join(base_dir, "tests", "hello_world.wav")
         exe_path = os.path.join(base_dir, 'whisper_cpp', 'main.exe')
-        model_path = os.path.join(base_dir, 'whisper_cpp', 'ggml-base.en.bin')
+        model_path = os.path.join(base_dir, 'whisper_cpp', 'ggml-base.bin')
 
         command = [
             exe_path,

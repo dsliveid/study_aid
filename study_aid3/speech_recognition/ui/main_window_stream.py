@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QH
 from PyQt5.QtCore import QThread, pyqtSignal
 
 from speech_recognition.audio_capture import AudioCapture
-from speech_recognition.speech_recognizer import SpeechRecognizer
+from speech_recognition.speech_recognizer_stream import SpeechRecognizer
 
 class RecognitionWorker(QThread):
     """

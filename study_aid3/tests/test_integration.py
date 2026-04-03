@@ -6,6 +6,7 @@ import numpy as np
 import queue
 from scipy.io.wavfile import write
 
+# 测试完整的流程，包括音频采集、保存、识别和识别结果验证
 class TestIntegration(unittest.TestCase):
     def test_end_to_end(self):
         """TC-INT-001: 完整流程测试"""
@@ -49,7 +50,7 @@ class TestIntegration(unittest.TestCase):
         # --- 步骤3: 语音识别 (whisper.cpp) ---
         print("步骤3: 语音识别 (whisper.cpp)")
         exe_path = os.path.join(base_dir, 'whisper_cpp', 'main.exe')
-        model_path = os.path.join(base_dir, 'whisper_cpp', 'ggml-base.en.bin')
+        model_path = os.path.join(base_dir, 'whisper_cpp', 'ggml-base.bin')
         
         command = [
             exe_path,

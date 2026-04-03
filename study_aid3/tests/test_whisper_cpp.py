@@ -3,13 +3,14 @@ import os
 import subprocess
 import time
 
+# 测试 whisper.cpp (main.exe) 的基本转录功能
 class SpeechRecognitionTest(unittest.TestCase):
     def test_basic_transcription_whisper_cpp(self):
         """测试 whisper.cpp (main.exe) 的基本转录功能。"""
         # 1. 定义路径
         base_dir = os.path.dirname(os.path.dirname(__file__))
         exe_path = os.path.join(base_dir, 'whisper_cpp', 'main.exe')
-        model_path = os.path.join(base_dir, 'whisper_cpp', 'ggml-base.en.bin')
+        model_path = os.path.join(base_dir, 'whisper_cpp', 'ggml-base.bin')
         audio_path = os.path.join(base_dir, 'recorded_audio_16khz.wav')
 
         # 2. 检查文件是否存在

@@ -2,6 +2,7 @@ import os
 from gtts import gTTS
 from pydub import AudioSegment
 
+# 生成一个 'Hello, world.' 的音频文件
 def generate_hello_audio(output_path="hello_world.wav"):
     """
     Generates a 'Hello, world.' audio file in WAV format.

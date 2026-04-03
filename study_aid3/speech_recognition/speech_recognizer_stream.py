@@ -6,7 +6,7 @@ import os
 import time
 
 class SpeechRecognizer:
-    def __init__(self, model_path="whisper_cpp/ggml-base.en.bin", keep_temp_files=False):
+    def __init__(self, model_path="whisper_cpp/ggml-base.bin", keep_temp_files=False):
         project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
         self.model_path = os.path.join(project_root, model_path)
         # 使用 stream.exe
