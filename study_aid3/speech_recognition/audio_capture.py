@@ -22,6 +22,21 @@ class AudioCapture:
         self.capture_started_event = threading.Event()
         self.capture_sample_rate = None
 
+    def _enqueue_audio_chunk(self, chunk):
+        """Keep the newest audio when the queue is under backpressure."""
+        if self.stop_event.is_set():
+            return
+
+        while not self.stop_event.is_set():
+            try:
+                self.audio_queue.put_nowait(chunk)
+                return
+            except queue.Full:
+                try:
+                    self.audio_queue.get_nowait()
+                except queue.Empty:
+                    return
+
     def list_microphone_devices(self) -> list:
         """列出所有麦克风设备"""
         devices = sd.query_devices()
@@ -89,7 +104,7 @@ class AudioCapture:
                 if status:
                     print(f"Audio callback status: {status}")
                 if not self.stop_event.is_set():
-                    self.audio_queue.put(indata.copy())
+                    self._enqueue_audio_chunk(indata.copy())
 
             self.sd_stream = sd.InputStream(
                 device=device_index,
@@ -186,9 +201,7 @@ class AudioCapture:
                     else:
                         resampled_audio = mono_audio
 
-                    self.audio_queue.put_nowait(resampled_audio)
-                except queue.Full:
-                    pass
+                    self._enqueue_audio_chunk(resampled_audio)
                 except Exception as e:
                     print(f"音频处理回调错误: {e}")
                 return (in_data, pyaudio.paContinue)
